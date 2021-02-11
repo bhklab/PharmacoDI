@@ -1,5 +1,7 @@
 # PharmacoDI
 
+![GitHub Actions Workflow](https://github.com/actions/PharmacoDI/workflows/.github/workflows/main.yml/badge.svg)
+
 The PharmacoDI Python package contains all the functions needed to make the PharmacoDB database tables from a collection of .csv for each PSet.
 
 ## Description
