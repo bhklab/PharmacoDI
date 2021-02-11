@@ -11,12 +11,13 @@ on:
 
 jobs:
   # Select python versions to compile on
-  strategy:
-      matrix:
-        python-versions: [3.7, 3.8]:
+
      
   build-ubuntu:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-versions: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2 # Checkout repo
       - name: Setup python ${{ matrix.python-version }}
@@ -34,6 +35,9 @@ jobs:
   
   build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        python-versions: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2 
       - name: Setup python ${{ matrix.python-version }}
@@ -52,6 +56,9 @@ jobs:
   
   build-windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        python-versions: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2
       - name: Setup python ${{ matrix.python-version }}
