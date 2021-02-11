@@ -1,0 +1,11 @@
+# Include in package installer
+include README.md
+include LICENSE
+
+# Global includes
+global-include *.py
+
+# Exclude from package installer
+recursive-exclude data *
+recursive-exclude scripts *
+recursive-exclude dist *
