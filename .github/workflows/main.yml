@@ -10,12 +10,13 @@ on:
     branches: [ master ]
 
 jobs:
+  # Select python versions to compile on
+  strategy:
+      matrix:
+        python-versions: [3.7, 3.8]:
+     
   build-ubuntu:
     runs-on: ubuntu-latest
-    # Select python versions to compile on
-    strategy:
-      matrix:
-        python-versions: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2 # Checkout repo
       - name: Setup python ${{ matrix.python-version }}
@@ -29,7 +30,7 @@ jobs:
           pip install cython numpy pandas
       - name: Build wheels
         run: |
-          python setup.py sdist bdistwheel
+          python setup.py sdist bdist_wheel
   
   build-macos:
     runs-on: macos-latest
@@ -46,7 +47,7 @@ jobs:
           pip install cython numpy pandas
       - name: Build wheels
         run: |
-          python setup.py sdist bdistwheel
+          python setup.py sdist bdist_wheel
 
   
   build-windows:
@@ -64,4 +65,4 @@ jobs:
           pip install cython numpy pandas
       - name: Build wheels
         run: |
-          python setup.py sdist bdistwheel
+          python setup.py sdist bdist_wheel
