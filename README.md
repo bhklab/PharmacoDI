@@ -1,6 +1,6 @@
 # PharmacoDI
 
-PharmacDI Python package containing all the functions needed to make the PharmacoDB database tables from a collection of .csv for each PSet.
+The PharmacoDI Python package contains all the functions needed to make the PharmacoDB database tables from a collection of .csv for each PSet.
 
 ## Description
 
