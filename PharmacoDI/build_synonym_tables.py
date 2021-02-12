@@ -7,27 +7,22 @@ from datatable import Frame
 from PharmacoDI.combine_pset_tables import write_table
 
 
-def get_metadata(file_name, metadata_dir):
-    # Find correct metadata annotations CSV file
-    annotations_file = glob.glob(
-        os.path.join(metadata_dir, file_name))
-    if not annotations_file:
-        print(f'ValueError: no metadata file {file_name} in {metadata_dir}')
+def get_metadata(file_name):
+    # Check that metadata file exists
+    if not os.path.exists(file_name):
         raise ValueError(
-            f'No metadata file named {file_name} could be found in {metadata_dir}')
+            f'No metadata file {file_name} could be found!')
     
     # Read csv file and return df
-    return pd.read_csv(annotations_file[0], index_col=[0])
+    return pd.read_csv(file_name, index_col=[0])
 
 
 # --- SYNONYMS TABLES --------------------------------------------------------------------------
 
-def build_cell_synonym_df(cell_file, metadata_dir, output_dir):
-    print('abc')
+def build_cell_synonym_df(cell_file, output_dir):
     # Get metadata file and cell_df
-    cell_metadata = get_metadata(cell_file, metadata_dir)
+    cell_metadata = get_metadata(cell_file)
     cell_df = pd.read_csv(os.path.join(output_dir, 'cell.csv'))
-    print('def')
     # Find all columns relevant to cellid
     pattern = re.compile('cellid')
     cell_columns = cell_metadata[[
@@ -46,9 +41,9 @@ def build_cell_synonym_df(cell_file, metadata_dir, output_dir):
     return df
     
 
-def build_tissue_synonym_df(tissue_file, metadata_dir, output_dir):
+def build_tissue_synonym_df(tissue_file, output_dir):
     # Get metadata file and tissue_df (assume taht tissue_df is also in output_dir)
-    tissue_metadata = get_metadata(tissue_file, metadata_dir)
+    tissue_metadata = get_metadata(tissue_file)
     tissue_df = pd.read_csv(os.path.join(output_dir, 'tissue.csv'))
 
     # Find all columns relevant to tissueid
@@ -69,9 +64,9 @@ def build_tissue_synonym_df(tissue_file, metadata_dir, output_dir):
     return df
 
 
-def build_drug_synonym_df(drug_file, metadata_dir, output_dir):
+def build_drug_synonym_df(drug_file, output_dir):
     # Get metadata file and drug_df
-    drug_metadata = get_metadata(drug_file, metadata_dir)
+    drug_metadata = get_metadata(drug_file)
     drug_df = pd.read_csv(os.path.join(output_dir, 'drug.csv'))
 
     # Find all columns relevant to drugid
