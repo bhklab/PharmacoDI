@@ -23,10 +23,11 @@ def get_metadata(file_name, metadata_dir):
 # --- SYNONYMS TABLES --------------------------------------------------------------------------
 
 def build_cell_synonym_df(cell_file, metadata_dir, output_dir):
+    print('abc')
     # Get metadata file and cell_df
     cell_metadata = get_metadata(cell_file, metadata_dir)
     cell_df = pd.read_csv(os.path.join(output_dir, 'cell.csv'))
-
+    print('def')
     # Find all columns relevant to cellid
     pattern = re.compile('cellid')
     cell_columns = cell_metadata[[
