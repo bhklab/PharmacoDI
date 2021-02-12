@@ -3,6 +3,7 @@ import glob
 import re
 import pandas as pd
 import numpy as np
+from datetime import date
 from PharmacoDI.build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_drug_df, build_tissue_df
 from PharmacoDI.build_experiment_tables import build_experiment_tables, build_experiment_df
 from PharmacoDI.build_pset_gene_drugs import build_gene_drug_df
@@ -53,6 +54,12 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     # Write all tables to CSV files
     for df_name in pset_dfs.keys():
         write_pset_table(pset_dfs[df_name], df_name, pset_name, procdata_dir)
+
+    log_file = open(os.path.join(procdata_dir, pset_name, f'{pset_name}_log.txt'), "w")
+    log_file.write('Wrote the following PSet tables: \n')
+    log_file.writelines(f'{table}\n' for table in pset_dfs.keys())
+    log_file.write(f'on {date.today()}')
+    log_file.close()
 
 
 def build_mol_cell_df(pset_dict, pset_name, gene_drug_df, dataset_cell_df=None):
