@@ -6,18 +6,13 @@ import pandas as pd
 from datatable import Frame
 from PharmacoDI.combine_pset_tables import write_table
 
-output_dir = os.path.join('data', 'demo')
-metadata_dir = os.path.join('data', 'metadata')
-
-cell_file = "cell_annotation_all.csv"
-tissue_file = "cell_annotation_all.csv"
-drug_file = "drugs_with_ids.csv"
 
 def get_metadata(file_name, metadata_dir):
     # Find correct metadata annotations CSV file
     annotations_file = glob.glob(
         os.path.join(metadata_dir, file_name))
     if not annotations_file:
+        print(f'ValueError: no metadata file {file_name} in {metadata_dir}')
         raise ValueError(
             f'No metadata file named {file_name} could be found in {metadata_dir}')
     
