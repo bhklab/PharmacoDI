@@ -5,10 +5,6 @@ from collections import defaultdict
 import datatable as dt
 from PharmacoDI.combine_pset_tables import join_tables, write_table, rename_and_key
 
-if 'PharmacoDI' not in os.getcwd():
-    os.chdir('PharmacoDI')
-
-cellosaurus_path = 'data/metadata/cellosaurus.txt'
 
 # Using a default dict because it allows me to append duplicate indexes into a list
 # Helper for build_cellosaurus_df
