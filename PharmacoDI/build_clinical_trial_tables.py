@@ -4,7 +4,7 @@ import pandas as pd
 import datatable as dt
 from urllib3.exceptions import HTTPError
 from PharmacoDI.get_chembl_drug_targets import parallelize
-from PharmacoDI.combine_pset_tables import join_tables, write_table
+from PharmacoDI.combine_pset_tables import write_table
 
 
 # TODO: split into more helpers?
@@ -36,26 +36,25 @@ def build_clinical_trial_tables(output_dir):
         studies_df = studies_df.explode(column)
     # Drop and rename columns
     studies_df.drop(columns='Rank', inplace=True)
-    studies_df.rename(columns={'OrgStudyId': 'clinical_trial_id',
-                               'NCTId': 'nct',
+    studies_df.rename(columns={'NCTId': 'nct',
                                'SeeAlsoLinkURL': 'link',
                                'OverallStatus': 'status'}, inplace=True)
 
     # Build clinical trials table
-    clin_trial_df = studies_df[['clinical_trial_id',
-                                'nct', 'link', 'status']].copy()
-    clin_trial_df.drop_duplicates('clinical_trial_id', inplace=True)
+    clin_trial_df = studies_df[['nct', 'link', 'status']].copy()
+    clin_trial_df.drop_duplicates('nct', inplace=True)
     clin_trial_df.reset_index(inplace=True, drop=True)
-    write_table(dt.Frame(clin_trial_df), 'clinical_trial',
-                output_dir, add_index=False)
+    clin_trial_df['clinical_trial_id'] = clin_trial_df.index + 1
 
     # Build drug trial table
-    drug_trial_df = studies_df[['clinical_trial_id', 'drug_name']].copy()
-    drug_trial_df.drop_duplicates(inplace=True)
+    drug_trial_df = studies_df[['nct', 'drug_name']].copy()
+    drug_trial_df.drop_duplicates(inplace=True)    
+    drug_trial_df = pd.merge(drug_trial_df, clin_trial_df, on='nct')
     drug_trial_df = pd.merge(drug_trial_df, drug_df, on='drug_name')
-    drug_trial_df.drop(columns='drug_name', inplace=True)
-    write_table(dt.Frame(drug_trial_df), 'drug_trial',
-                output_dir, add_index=False)
+
+    # Write both tables
+    write_table(dt.Frame(clin_trial_df), 'clinical_trial', output_dir, add_index=False)
+    write_table(dt.Frame(drug_trial_df[['clinical_trial_id', 'drug_id']]), 'drug_trial', output_dir, add_index=False)
 
 
 # TODO: shorter names please?
@@ -113,8 +112,7 @@ def get_clinical_trials_for_drug(drug_name, min_rank, max_rank):
     }
     r = requests.get(base_url, params=params)
 
-    studies = pd.DataFrame(columns=['Rank', 'OrgStudyId', 'NCTId',
-                                    'OverallStatus', 'SeeAlsoLinkURL'])
+    studies = pd.DataFrame(columns=['Rank', 'NCTId', 'OverallStatus', 'SeeAlsoLinkURL'])
 
     # Check that request was successful
     if r.status_code != 200:
