@@ -184,8 +184,8 @@ def load_table(name, data_dir):
     df = rbind(*iread(files, sep=','))
     # Replace any empty strings with None/NA
     df.replace("", None)
-    # Drop duplicates
-    # (groups by all columns and selects only the first row from each group)
+    # Drop duplicates (groups by all columns and 
+    # selects only the first row from each group)
     df = df[0, :, by(df.names)]
 
     return df
