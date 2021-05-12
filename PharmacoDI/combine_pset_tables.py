@@ -211,7 +211,7 @@ def rename_and_key(df, join_col, og_col='name'):
     return df  # Not necessary? df passed by reference
 
 
-def join_tables(df1, df2, join_col):
+def join_tables(df1, df2, join_col, ignore_versions=False):
     """
     Join df2 and df1 based on join_col (left outer join by default).
 
@@ -219,6 +219,9 @@ def join_tables(df1, df2, join_col):
     @param df2: [`datatable.Frame`] The join table (ex. tissue datatable)
     @param join_col: [`string`] The name of the columns on which the tables
                             will be joined (ex. 'tissue_id')
+    @param ignore_versions: [`boolean`] An optional parameter (default=False)
+        that lets you ignore version numbers when joining on gene_id. This 
+        feature allows more comprehensive joins, but risks data corruption
     @return [`datatable.Frame`] The new, joined table
     """
     if (join_col not in df1.names) or (join_col not in df2.names):
@@ -226,10 +229,44 @@ def join_tables(df1, df2, join_col):
               'Make sure you have prepared df2 using rename_and_key().')
         return None
 
-    # Join tables, then rename the join col and drop it
+    # Join the tables
     df = df1[:, :, join(df2)]
+
+    # If joining on gene_id, try dropping version numbers and joining again
+    if ignore_versions and (join_col == 'gene_id') 
+        and (df[dt.isna(df[:, 'id']), :].nrows > 0):
+        # Remove version numbers from unmatched gene_ids in gene_drug df 
+        gene_col = df[dt.isna(df[:, 'id']), join_col]
+        gene_col = gene_col.to_pandas()
+        gene_col.replace('\.[0-9]$', '', regex=True, inplace=True)
+        df[dt.isna(df[:, 'id']), join_col] = dt.Frame(gene_col)
+
+        # Remove version numbers from gene_ids in gene df
+        df2 = df2.to_pandas()
+        df2.replace('\.[0-9]$', '', regex=True, inplace=True)
+        df2 = dt.Frame(df2)
+        df2.key = 'gene_id'
+
+        # Make a copy of all unmatched rows in gene_drug, and delete 'id' col (N/A)
+        unmatched_df = df[dt.isna(df[:, 'id']), :].copy()
+        del unmatched_df[:, 'id']
+        # Join unmatched rows with new gene df, and concat with rows that
+        # were matched in the previous join
+        df = dt.rbind(df[dt.f.id > 0, :], unmatched_df[:, :, join(df2)])
+
+        # NOTE: datatable doesn't currently have a string replace or regex function
+        # This code should be updated when datatable introduced Version 1.0, which
+        # will have a re module for these types of regex operations
+
+    # Rename the join col and drop it
     df.names = {join_col: 'drop', 'id': join_col}
     del df[:, 'drop']
+
+    # Check to see if any FKs are null
+    if df[dt.isna(df[:, join_col]), :].nrows > 0:
+        print(f'Some rows have a NULL {join_col} --- these rows will be deleted!')
+        del df[dt.isna(df[:, join_col]), :]
+
     return df
 
 
