@@ -8,12 +8,6 @@ from PharmacoDI.combine_pset_tables import write_table, rename_and_key, join_tab
 from PharmacoDI.get_chembl_drug_targets import parallelize
 
 
-drugbank_file = os.path.join(
-    "data", "metadata", "drugbank_targets_has_ref_has_uniprot.csv")
-chembl_file = os.path.join('data', 'metadata', 'chembl_drug_targets.csv')
-output_dir = os.path.join("data", "demo")
-
-
 def build_target_tables(drugbank_file, chembl_file, output_dir):
     """
     Build the target and drug target tables using data from Drugbank
