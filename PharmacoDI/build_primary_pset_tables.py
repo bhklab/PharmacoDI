@@ -41,7 +41,9 @@ def build_gene_df(pset_dict):
 
     # Many ENSEMBL gene IDs have the version (ex. ENST00000456328.2 instead
     # of ENST00000456328); remove all version numbers
-    gene_df.replace('\.[0-9]$', '', regex=True, inplace=True)
+    # Keeping version numbers for now!
+    #gene_df.replace('\.[0-9]$', '', regex=True, inplace=True)
+    
     gene_df.drop_duplicates(inplace=True)
     return gene_df
 
@@ -92,8 +94,10 @@ def build_gene_annotation_df(pset_dict):
         gene_annotation_df = gene_annotation_df.append(df)
 
     # Remove all ENSEMBL gene id version numbers (ex. ENST00000456328.2 instead of ENST00000456328)
-    gene_annotation_df['gene_id'].replace('\.[0-9]$', '',
-                                          regex=True, inplace=True)
+    # For now, we have decided to keep version numbers in the table, they are only dropped in joins
+    #gene_annotation_df['gene_id'].replace('\.[0-9]$', '',
+    #                                      regex=True, inplace=True)
+
     gene_annotation_df.drop_duplicates(subset=['gene_id'], inplace=True)
 
     return gene_annotation_df
