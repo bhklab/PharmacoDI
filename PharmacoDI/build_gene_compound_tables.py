@@ -23,7 +23,7 @@ def read_gene_signatures(pset_name, file_path):
     return pd.read_csv(pset_file[0])
 
 
-def build_gene_compound_df(gene_sig_dir, pset_name):
+def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
     TODO - ask Chris to explain this table again
 
@@ -42,40 +42,36 @@ def build_gene_compound_df(gene_sig_dir, pset_name):
     gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
 
     # Extract relevant columns
-    gene_compound_df = gene_sig_df[[
-        'gene', 'compound', 'estimate', 'n', 'pvalue', 'df', 'fdr', 'tissue', 'mDataType']].copy()
-    # TODO - cannot find 'se', 'sens_stat' -- is one of these 'significant'???
+    # gene_compound_tissue_dataset = gctd
+    gctd_df = gene_sig_df[['gene', 'compound', 'estimate', 'n', 'pvalue', 'df', \
+                           'fdr', 'tissue', 'mDataType', 'lower', 'upper']].copy()
     # Chris: You will determine significance based on the fdr (false discovery rate) at alpha = 0.05, it will be TRUE or FALSE (or 1 or 0)
 
-    # Chris: 'se' - leave NA/Null/None for now, it will be added as a column to the gene signatures the next time we run them.
-    gene_compound_df['se'] = np.nan
     # Chris: 'sens_stat' - I will add this to the function for extracting per PSet gene signatures - for now it is always 'AAC' (Area above dose-response curve)
-    gene_compound_df['sens_stat'] = 'AAC'
-    # TODO - cannot find 'compound_like_molecule', 'in_clinical_trials'
+    gctd_df['sens_stat'] = 'AAC'
     # Chris: Have renamed it to tested_in_human_trials, it will indicate a 1 if it has ever been tested in a human clinical trial (even if it failed)
     # Chris: Source for this data will be clinicaltrails.gov
     # TODO - check out API, leave NA for now
-    gene_compound_df['tested_in_human_trials'] = np.nan
-    gene_compound_df['in_clinical_trials'] = np.nan
+    gctd_df['tested_in_human_trials'] = np.nan
+    gctd_df['in_clinical_trials'] = np.nan
 
     # Rename foreign key columns
-    gene_compound_df.rename(
-        columns={'gene': 'gene_id', 'compound': 'compound_id', 'tissue': 'tissue_id'}, inplace=True)
+    gctd_df.rename(columns={'gene': 'gene_id', 'drug': 'compound_id', \
+                            'tissue': 'tissue_id'}, inplace=True)
 
     # Add dataset id
-    gene_compound_df['dataset_id'] = pset_name
+    gctd_df['dataset_id'] = pset_name
 
     # Add missing columns (TODO - get this data)
-    gene_compound_df['tstat'] = np.nan
-    gene_compound_df['fstat'] = np.nan
-    gene_compound_df['FWER_genes'] = np.nan
-    gene_compound_df['FWER_compounds'] = np.nan
-    gene_compound_df['FWER_all'] = np.nan
-    gene_compound_df['BF_p_all'] = np.nan
-    gene_compound_df['meta_res'] = np.nan
+    gctd_df['tstat'] = np.nan
+    gctd_df['fstat'] = np.nan
+    gctd_df['FWER_genes'] = np.nan
+    gctd_df['FWER_compounds'] = np.nan
+    gctd_df['FWER_all'] = np.nan
+    gctd_df['BF_p_all'] = np.nan
 
     # Reorder columns
-    return gene_compound_df[['gene_id', 'compound_id', 'estimate', 'se', 'n', 'tstat', 'fstat',
-                         'pvalue', 'df', 'fdr', 'FWER_genes', 'FWER_compounds', 'FWER_all',
-                         'BF_p_all', 'meta_res', 'dataset_id', 'sens_stat', 'tissue_id',
-                         'mDataType', 'tested_in_human_trials', 'in_clinical_trials']]
+    return gctd_df[['gene_id', 'compound_id', 'estimate', 'lower', 'upper', 'n', 'tstat', 
+                    'fstat', 'pvalue', 'df', 'fdr', 'FWER_genes', 'FWER_compounds', 'FWER_all',
+                    'BF_p_all', 'dataset_id', 'sens_stat', 'tissue_id', 'mDataType', 
+                    'tested_in_human_trials', 'in_clinical_trials']]
