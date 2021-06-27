@@ -9,6 +9,6 @@ from .get_chembl_targets import get_chembl_targets
 from .get_chembl_drug_targets import get_chembl_drug_target_mappings
 from .build_target_tables import build_target_tables
 from .combine_pset_tables import combine_all_pset_tables
-from .build_synonym_tables import build_cell_synonym_df, build_drug_synonym_df, build_tissue_synonym_df
+from .build_synonym_tables import build_cell_synonym_df, build_compound_synonym_df, build_tissue_synonym_df
 from .build_cellosaurus import build_cellosaurus_df
 from .build_clinical_trial_tables import build_clinical_trial_tables

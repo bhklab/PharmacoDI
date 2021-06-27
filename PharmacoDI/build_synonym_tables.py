@@ -7,6 +7,8 @@ from datatable import Frame
 from PharmacoDI.combine_pset_tables import write_table
 
 
+# TODO: add docstrings
+
 def get_metadata(file_name):
     # Check that metadata file exists
     if not os.path.exists(file_name):
@@ -64,27 +66,27 @@ def build_tissue_synonym_df(tissue_file, output_dir):
     return df
 
 
-def build_drug_synonym_df(drug_file, output_dir):
-    # Get metadata file and drug_df
-    drug_metadata = get_metadata(drug_file)
-    drug_df = pd.read_csv(os.path.join(output_dir, 'drug.csv'))
+def build_compound_synonym_df(compound_file, output_dir):
+    # Get metadata file and compound_df
+    compound_metadata = get_metadata(compound_file)
+    compound_df = pd.read_csv(os.path.join(output_dir, 'compound.csv'))
 
-    # Find all columns relevant to drugid
+    # Find all columns relevant to compoundid
     # Right now only FDA col is dropped, but may be more metadata in the future
-    pattern = re.compile('drugid')
-    drug_cols= drug_metadata[[
-        col for col in drug_metadata.columns if pattern.search(col)]]
+    pattern = re.compile('compoundid')
+    compound_cols= compound_metadata[[
+        col for col in compound_metadata.columns if pattern.search(col)]]
 
-    # Get all unique synonyms and join with drugs_df
-    drug_synonym_df = melt_and_join(drug_cols, 'unique.drugid', drug_df)
-    drug_synonym_df = drug_synonym_df.rename(columns={'id': 'drug_id', 'value': 'drug_name'})
+    # Get all unique synonyms and join with compounds_df
+    compound_synonym_df = melt_and_join(compound_cols, 'unique.compoundid', compound_df)
+    compound_synonym_df = compound_synonym_df.rename(columns={'id': 'compound_id', 'value': 'compound_name'})
 
     # Add blank col for dataset_id (TODO)
-    drug_synonym_df['dataset_id'] = np.nan
+    compound_synonym_df['dataset_id'] = np.nan
 
     # Convert to datatable.Frame for fast write to disk
-    df = Frame(drug_synonym_df)
-    df = write_table(df, 'drug_synonym', output_dir)
+    df = Frame(compound_synonym_df)
+    df = write_table(df, 'compound_synonym', output_dir)
     return df
 
 

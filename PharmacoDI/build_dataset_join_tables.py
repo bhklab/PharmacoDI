@@ -1,5 +1,5 @@
 import pandas as pd
-from PharmacoDI.build_all_pset_tables import build_cell_df, build_drug_df, build_tissue_df
+from PharmacoDI.build_all_pset_tables import build_cell_df, build_compound_df, build_tissue_df
 
 
 def build_dataset_join_dfs(pset_dict, pset_name, primary_dfs={}):
@@ -10,13 +10,13 @@ def build_dataset_join_dfs(pset_dict, pset_name, primary_dfs={}):
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
     @param pset_name: [`string`] The name of the PSet
     @param primary_dfs: [`pd.DataFrame`] A dictionary containing primary tables (cell,
-                                        tissue, compound/drug) from this PSet
+                                        tissue, compound/compound) from this PSet
     @return: [`dict(string: pd.DataFrame)`] A dictionary of the join tables, with 
                                             table names as keys
     """
     cell_df = primary_dfs['cell'] if 'cell' in primary_dfs else None
     tissue_df = primary_dfs['tissue'] if 'tissue' in primary_dfs else None
-    compound_df = primary_dfs['drug'] if 'drug' in primary_dfs else None
+    compound_df = primary_dfs['compound'] if 'compound' in primary_dfs else None
 
     join_dfs = {}
     join_dfs['dataset_cell'] = build_dataset_cell_df(
@@ -66,15 +66,15 @@ def build_dataset_tissue_df(pset_dict, pset_name, tissue_df=None):
 
 def build_dataset_compound_df(pset_dict, pset_name, compound_df=None):
     """
-    Builds a join table summarizing the drugs/compounds in this PSet.
+    Builds a join table summarizing the compounds/compounds in this PSet.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
     @param pset_name: [`string`] The name of the PSet
-    @param compound_df: [`pd.DataFrame`] The drug/compound table for this PSet
-    @return: [`pd.DataFrame`] The join table with all compounds/drugs in this PSet
+    @param compound_df: [`pd.DataFrame`] The compound/compound table for this PSet
+    @return: [`pd.DataFrame`] The join table with all compounds/compounds in this PSet
     """
     if compound_df is None:
-        compound_df = build_drug_df(pset_dict)
+        compound_df = build_compound_df(pset_dict)
 
     dataset_compound_df = pd.DataFrame(
         {'dataset_id': pset_name, 'compound_id': compound_df})

@@ -6,7 +6,7 @@ import numpy as np
 
 def build_primary_pset_tables(pset_dict, pset_name):
     """
-    Build the tissue, drug, and gene tables for a PSet and return them
+    Build the tissue, compound, and gene tables for a PSet and return them
     in a dictionary, with table names as the keys.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
@@ -16,8 +16,8 @@ def build_primary_pset_tables(pset_dict, pset_name):
     pset_dfs = {}
     pset_dfs['dataset'] = pd.Series(pset_name, name='name')
     pset_dfs['tissue'] = build_tissue_df(pset_dict)
-    pset_dfs['drug'] = build_drug_df(pset_dict)
-    pset_dfs['drug_annotation'] = build_drug_annotation_df(pset_dict)
+    pset_dfs['compound'] = build_compound_df(pset_dict)
+    pset_dfs['compound_annotation'] = build_compound_annotation_df(pset_dict)
     pset_dfs['cell'] = build_cell_df(pset_dict)
     # Don't make gene table if there are no molecular profiles (TODO - check with chris)
     if 'molecularProfiles' in pset_dict:
@@ -60,15 +60,15 @@ def build_tissue_df(pset_dict):
     return tissue_df
 
 
-def build_drug_df(pset_dict):
+def build_compound_df(pset_dict):
     """
-    Build a table containing all drugs in a dataset.
+    Build a table containing all compounds in a dataset.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @return: [`DataFrame`] The drug table
+    @return: [`DataFrame`] The compound table
     """
-    drug_df = pd.Series(pd.unique(pset_dict['drug']['drugid']), name='name')
-    return drug_df
+    compound_df = pd.Series(pd.unique(pset_dict['compound']['compoundid']), name='name')
+    return compound_df
 
 
 def build_gene_annotation_df(pset_dict):
@@ -103,20 +103,20 @@ def build_gene_annotation_df(pset_dict):
     return gene_annotation_df
 
 
-def build_drug_annotation_df(pset_dict):
+def build_compound_annotation_df(pset_dict):
     """
-    Build a table mapping each drug in a dataset to its drug annotations.
+    Build a table mapping each compound in a dataset to its compound annotations.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @return: [`DataFrame`] A table of all drug annotations, mapped to drugs
+    @return: [`DataFrame`] A table of all compound annotations, mapped to compounds
     """
-    # Make drug_annotations df
-    drug_annotation_df = pset_dict['drug'][[
+    # Make compound_annotations df
+    compound_annotation_df = pset_dict['compound'][[
         'rownames', 'smiles', 'inchikey', 'cid', 'FDA']].copy()
-    drug_annotation_df.rename(
-        columns={'rownames': 'drug_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, inplace=True)
+    compound_annotation_df.rename(
+        columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, inplace=True)
 
-    return drug_annotation_df
+    return compound_annotation_df
 
 
 # TODO - confirm that you're using the correct cell id

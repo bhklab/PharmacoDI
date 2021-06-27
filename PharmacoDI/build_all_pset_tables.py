@@ -4,9 +4,9 @@ import re
 import pandas as pd
 import numpy as np
 from datetime import date
-from PharmacoDI.build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_drug_df, build_tissue_df
+from PharmacoDI.build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_compound_df, build_tissue_df
 from PharmacoDI.build_experiment_tables import build_experiment_tables, build_experiment_df
-from PharmacoDI.build_pset_gene_drugs import build_gene_drug_df
+from PharmacoDI.build_pset_gene_compounds import build_gene_compound_df
 from PharmacoDI.write_pset_table import write_pset_table
 from PharmacoDI.build_dataset_join_tables import build_dataset_join_dfs
 
@@ -18,12 +18,12 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
     @param pset_name: [`string`] The name of the PSet
     @param procdata_dir: [`string`] The file path to the directory containing processed data
-    @param gene_sig_dir: [`string`] The file path to the directory containing gene_drugs data
+    @param gene_sig_dir: [`string`] The file path to the directory containing gene_compounds data
     @return: [`None`]
     """
     pset_dfs = {}
 
-    # Build primary tables (relating to cells, drugs, tissues, genes)
+    # Build primary tables (relating to cells, compounds, tissues, genes)
     print('Building primary tables...')
     pset_dfs = build_primary_pset_tables(pset_dict, pset_name)
 
@@ -37,17 +37,17 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     pset_dfs = {**pset_dfs, **build_experiment_tables(
         pset_dict, pset_name, pset_dfs['cell'])}
 
-    # Build gene drugs table
-    print('Building gene drug table...')
-    pset_dfs['gene_drug'] = build_gene_drug_df(gene_sig_dir, pset_name)
-    if not isinstance(pset_dfs['gene_drug'], pd.DataFrame):
-        del pset_dfs['gene_drug']
+    # Build gene compounds table
+    print('Building gene compound table...')
+    pset_dfs['gene_compound'] = build_gene_compound_df(gene_sig_dir, pset_name)
+    if not isinstance(pset_dfs['gene_compound'], pd.DataFrame):
+        del pset_dfs['gene_compound']
 
     # Build summary/stats tables
     print('Building mol_cell and dataset_stats tables...')
-    if 'gene_drug' in pset_dfs:
+    if 'gene_compound' in pset_dfs:
         pset_dfs['mol_cell'] = build_mol_cell_df(
-            pset_dict, pset_name, pset_dfs['gene_drug'], pset_dfs['dataset_cell'])
+            pset_dict, pset_name, pset_dfs['gene_compound'], pset_dfs['dataset_cell'])
     pset_dfs['dataset_statistics'] = build_dataset_stats_df(
         pset_dict, pset_name, pset_dfs)
 
@@ -62,13 +62,13 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     log_file.close()
 
 
-def build_mol_cell_df(pset_dict, pset_name, gene_drug_df, dataset_cell_df=None):
+def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=None):
     """
     Builds a table that summarizes the number of profiles, per cell line, per molecular data
     type, in this dataset. (Only considers molecular data types for which there are sens stats?)
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @param gene_drug_df: [`pd.DataFrame`] The gene_drug table for this PSet
+    @param gene_compound_df: [`pd.DataFrame`] The gene_compound table for this PSet
     @param dataset_cell_df: [`pd.DataFrame`] A table containing all the cells in this  
         PSet and the PSet name
     @return: [`pd.DataFrame`] The table with the number of profiles for each cell line, 
@@ -77,7 +77,7 @@ def build_mol_cell_df(pset_dict, pset_name, gene_drug_df, dataset_cell_df=None):
     mol_cell_df = pd.DataFrame(
         columns=['cell_id', 'dataset_id', 'mDataType', 'num_prof'])
 
-    molecularTypes = pd.unique(gene_drug_df['mDataType'])
+    molecularTypes = pd.unique(gene_compound_df['mDataType'])
 
     if 'molecularProfiles' in pset_dict:
         profiles_dict = pset_dict['molecularProfiles']
@@ -123,7 +123,7 @@ def build_mol_cell_df(pset_dict, pset_name, gene_drug_df, dataset_cell_df=None):
 
 def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
     """
-    Summarizes how many cell lines, tissues, drugs, and experiments are contained
+    Summarizes how many cell lines, tissues, compounds, and experiments are contained
     within the dataset.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
@@ -138,8 +138,8 @@ def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
         pset_dfs['tissue'] = build_tissue_df(pset_dict)
     if 'cell' not in pset_dfs:
         pset_dfs['cell'] = build_cell_df(pset_dict)
-    if 'drug' not in pset_dfs:
-        pset_dfs['drug'] = build_drug_df(pset_dict)
+    if 'compound' not in pset_dfs:
+        pset_dfs['compound'] = build_compound_df(pset_dict)
     if 'experiment' not in pset_dfs:
         pset_dfs['experiment'] = build_experiment_df(
             pset_dict, pset_name, pset_dfs['cell'])
@@ -148,6 +148,6 @@ def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
         'dataset_id': [pset_name],
         'cell_lines': [len(pset_dfs['cell'].index)],
         'tissues': [len(pset_dfs['tissue'].index)],
-        'drugs': [len(pset_dfs['drug'].index)],
+        'compounds': [len(pset_dfs['compound'].index)],
         'experiments': [len(pset_dfs['experiment'].index)]
     })

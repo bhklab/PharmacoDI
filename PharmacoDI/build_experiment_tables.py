@@ -36,11 +36,11 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 
     # Extract relelvant experiment columns
     experiment_df = pset_dict['sensitivity']['info'][[
-        '.rownames', 'cellid', 'drugid']].copy()
+        '.rownames', 'cellid', 'compoundid']].copy()
 
     # Rename columns
     experiment_df.rename(
-        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id', 'drugid': 'drug_id'}, inplace=True)
+        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id', 'compoundid': 'compound_id'}, inplace=True)
 
     # Add datset_id column
     experiment_df['dataset_id'] = pset_name
@@ -49,7 +49,7 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
     experiment_df = pd.merge(experiment_df, cell_df[['name', 'tissue_id']],
                              left_on='cell_id', right_on='name', how='left')
     experiment_df = experiment_df[[
-        'experiment_id', 'cell_id', 'drug_id', 'dataset_id', 'tissue_id']]
+        'experiment_id', 'cell_id', 'compound_id', 'dataset_id', 'tissue_id']]
 
     experiment_df.rename(columns={'experiment_id': 'name'}, inplace=True)
 
@@ -70,8 +70,8 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 #   the value of that object is not changed
 def build_dose_response_df(pset_dict, pset_name):
     """
-    Build a table that, for each experiment in a dataset, lists the drug that was
-    tested, the doses in which that drug was administered, and the viability responses 
+    Build a table that, for each experiment in a dataset, lists the compound that was
+    tested, the doses in which that compound was administered, and the viability responses 
     corresponding to all the doses.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
