@@ -4,11 +4,11 @@ import re
 import pandas as pd
 import numpy as np
 from datetime import date
-from PharmacoDI.build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_compound_df, build_tissue_df
-from PharmacoDI.build_experiment_tables import build_experiment_tables, build_experiment_df
-from PharmacoDI.build_pset_gene_compounds import build_gene_compound_df
-from PharmacoDI.write_pset_table import write_pset_table
-from PharmacoDI.build_dataset_join_tables import build_dataset_join_dfs
+from .build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_compound_df, build_tissue_df
+from .build_experiment_tables import build_experiment_tables, build_experiment_df
+from .build_meta_tables import build_gene_compound_tissue_df
+from .write_pset_table import write_pset_table
+from .build_dataset_join_tables import build_dataset_join_dfs
 
 
 def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
@@ -39,7 +39,7 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
 
     # Build gene compounds table
     print('Building gene compound table...')
-    pset_dfs['gene_compound'] = build_gene_compound_df(gene_sig_dir, pset_name)
+    pset_dfs['gene_compound'] = build_gene_compound_tissue_df(gene_sig_dir, pset_name)
     if not isinstance(pset_dfs['gene_compound'], pd.DataFrame):
         del pset_dfs['gene_compound']
 

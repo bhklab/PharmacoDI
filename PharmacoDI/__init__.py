@@ -12,3 +12,4 @@ from .combine_pset_tables import combine_all_pset_tables
 from .build_synonym_tables import build_cell_synonym_df, build_compound_synonym_df, build_tissue_synonym_df
 from .build_cellosaurus import build_cellosaurus_df
 from .build_clinical_trial_tables import build_clinical_trial_tables
+from .map_genes_to_genomic_coordinates import map_genes_to_genomic_coordinates

@@ -3,8 +3,8 @@ import requests
 import pandas as pd
 import datatable as dt
 from urllib3.exceptions import HTTPError
-from PharmacoDI.get_chembl_compound_targets import parallelize
-from PharmacoDI.combine_pset_tables import write_table
+from .get_chembl_drug_targets import parallelize
+from .combine_pset_tables import write_table
 
 
 # TODO: split into more helpers?
