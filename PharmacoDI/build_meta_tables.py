@@ -1,18 +1,19 @@
 import os
 import pandas as pd
 import numpy as np
+from datatable import Frame
+from PharmacoDI.combine_pset_tables import write_table
 
-file_path = 'rawdata/gene_signatures/metaanalysis/gene_compound_tissue.csv'
 
-def build_gene_compound_tissue_df(file_path):
+def build_gene_compound_tissue_df(gene_compound_tissue_file, output_dir):
     """
     Build gene_compound_tissue table (description?)
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f'Could not find the {file_path}')
+    if not os.path.exists(gene_compound_tissue_file):
+        raise FileNotFoundError(f'Could not find the {gene_compound_tissue_file}')
 
     # gene_compound_tissue df = gct_df
-    gct_df = pd.read_csv(file_path)
+    gct_df = pd.read_csv(gene_compound_tissue_file)
     gct_df.rename(columns={'Gene': 'gene_id', 'Tissue': 'tissue_id', 'Drug': 'compound_id'}, inplace=True)
 
     # TODO: we still need these columns (not in CSV)
@@ -28,9 +29,12 @@ def build_gene_compound_tissue_df(file_path):
     gct_df['tested_in_human_trials'] = np.nan
     gct_df['in_clinical_trials'] = np.nan
 
-    # This column is in the CVS but not in the ERD
+    # This column is in the CSV but not in the ERD
     gct_df.drop(columns=['hetTestRes'], inplace=True)
 
+    # Convert to datatable.Frame for fast write to disk
+    gct_df = Frame(gct_df)
+    gct_df = write_table(gct_df, 'gene_compound_tissue', output_dir)
     return gct_df
 
 

@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import datatable as dt
 from urllib3.exceptions import HTTPError
-from .get_chembl_drug_targets import parallelize
+from .get_chembl_compound_targets import parallelize
 from .combine_pset_tables import write_table
 
 
