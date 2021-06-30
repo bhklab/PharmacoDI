@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 from datatable import Frame
+import datatable as dt
+from datatable import f, update
 from PharmacoDI.combine_pset_tables import write_table
 
 
@@ -38,8 +40,29 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, output_dir):
     return gct_df
 
 
-def build_gene_compound_dataset_df():
-    pass
+def build_gene_compound_dataset_df(gene_compound_dataset_file, output_dir):
+    """
+    Build gene_compound_dataset table. This table contains a pancancer (across all tissues) 
+    meta-analysis of compound sensitivity signatures by dataset and molecular data type.
+
+    @param: [`string`] Path to the gene_compound_tissue .csv file.
+    @param: [`string`] Path to write the output file to.
+    @return: [`None`] Writes a the file 'gene_compound_dataset.csv' to output_dir.
+    """
+    if not os.path.exists(gene_compound_dataset_file):
+        raise FileNotFoundError(f'Could not find the {gene_compound_dataset_file}')
+    
+    # -- Read in data
+    gcd_dt = dt.fread(gene_compound_dataset_file)
+
+    # -- Fix columns to match the ERD
+
+
+    # -- Join to existing tables to get the proper FK ids
+    
+
+    # -- Write to output
+    dt.fwrite(gcd_dt, file=os.path.join(output_dir, 'gene_compound_dataset.csv'))
 
 
 def build_gene_compound_df():
