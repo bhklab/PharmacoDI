@@ -5,10 +5,10 @@ import numpy as np
 from multiprocessing import Pool, cpu_count
 import datatable as dt
 from PharmacoDI.combine_pset_tables import write_table, rename_and_key, join_tables
-from PharmacoDI.get_chembl_drug_targets import parallelize
+from PharmacoDI.get_chembl_compound_targets import parallelize
 
 
-def build_target_tables(drugbank_file, chembl_file, output_dir):
+def build_target_tables(drugbank_file, chembl_file, output_dir, compound_synonym_file):
     """
     Build the target and drug target tables using data from Drugbank
     and ChEMBL.
@@ -16,6 +16,7 @@ def build_target_tables(drugbank_file, chembl_file, output_dir):
     @param drugbank_file: [`string`] The full file path to Drugbank targets
     @param chembl_file: [`string`] The full file path to ChEMBL targets
     @param output_dir: [`string`] The directory of all final PharmacoDB tables
+    @param compound_synonym_file: [`string`] The file path to the compound synonym table
     @return: None
     """
     # Get Drugbank data
@@ -23,7 +24,7 @@ def build_target_tables(drugbank_file, chembl_file, output_dir):
         raise FileNotFoundError(f"The file {drugbank_file} doesn't exist!")
     drugbank_df = pd.read_csv(drugbank_file)
     drugbank_df.rename(columns={'polypeptide.external.identifiers.UniProtKB': 'uniprot_id',
-                                'drugName': 'drug_name'}, inplace=True)
+                                'drugName': 'compound_name'}, inplace=True)
 
     # Get ChEMBL data
     if not os.path.exists(chembl_file):
@@ -33,8 +34,8 @@ def build_target_tables(drugbank_file, chembl_file, output_dir):
                               'accession': 'uniprot_id'}, inplace=True)
 
     target_df = build_target_table(chembl_df, drugbank_df, output_dir)
-    build_drug_target_table(chembl_df, drugbank_df, target_df, output_dir)
-    build_gene_drug_table(chembl_df, drugbank_df, target_df, output_dir)
+    build_compound_target_table(chembl_df, drugbank_df, target_df, output_dir, compound_synonym_file)
+    build_gene_target_table(chembl_df, drugbank_df, target_df, output_dir)
 
 
 def build_target_table(chembl_df, drugbank_df, output_dir):
@@ -57,7 +58,7 @@ def build_target_table(chembl_df, drugbank_df, output_dir):
     return target_df
 
 
-def build_drug_target_table(chembl_df, drugbank_df, target_df, output_dir):
+def build_compound_target_table(chembl_df, drugbank_df, target_df, output_dir, compound_synonym_file):
     """
     Using data from the Drugbank and ChEMBL drug target files and 
     the target table, build the drug target table.
@@ -66,22 +67,21 @@ def build_drug_target_table(chembl_df, drugbank_df, target_df, output_dir):
     @param drugbank_df: [`pd.DataFrame`] The DrugBank drug target table
     @param target_df: [`datatable.Frame`] The target table, keyed
     @param output_dir: [`string`] The file path with all final PharmacoDB tables
+    @param compound_synonym_file: [`string`] The file path to the compound synonym table
     @return: [`datatable.Frame`] The drug target table
     """
-    # Load drug synonym table from output_dir
-    drug_synonym_file = os.path.join(output_dir, 'drug_synonym.csv')
-    if not os.path.exists(drug_synonym_file):
-        raise FileNotFoundError(
-            f"There is no drug synonym file in {output_dir}!")
-    drug_syn_df = pd.read_csv(drug_synonym_file, dtype={'drug_id': 'int32'})
+    # Load compound synonym table from output_dir
+    if not os.path.exists(compound_synonym_file):
+        raise FileNotFoundError(f"The file {compound_synonym_file} doesn't exist!")
+    drug_syn_df = pd.read_csv(compound_synonym_file, dtype={'compound_id': 'int32'})
 
     # Join drugbank df with drug table (TODO: are we really using drug name to map?)
-    drugbank_df = pd.merge(drugbank_df, drug_syn_df, on='drug_name')
+    drugbank_df = pd.merge(drugbank_df, drug_syn_df, on='compound_name')
     # TODO: from 7521 down to only 122 rows :/
 
     # Combine ChEMBL and Drugbank tables to make drug target table
-    drug_target_df = pd.concat([chembl_df[['name', 'drug_id']].copy(),
-                                drugbank_df[['name', 'drug_id']].copy()])
+    drug_target_df = pd.concat([chembl_df[['name', 'compound_id']].copy(),
+                                drugbank_df[['name', 'compound_id']].copy()])
     drug_target_df.rename(columns={'name': 'target_id'}, inplace=True)
     drug_target_df.drop_duplicates(inplace=True)
 
@@ -93,11 +93,11 @@ def build_drug_target_table(chembl_df, drugbank_df, target_df, output_dir):
     drug_target_df = drug_target_df[0, :, dt.by(drug_target_df.names)]
 
     drug_target_df = write_table(
-        drug_target_df, 'drug_target', output_dir, add_index=False)
+        drug_target_df, 'compound_target', output_dir, add_index=False)
     return drug_target_df
 
 
-def build_gene_drug_table(chembl_df, drugbank_df, target_df, output_dir):
+def build_gene_target_table(chembl_df, drugbank_df, target_df, output_dir):
     """
     Build a join table...
 
@@ -144,6 +144,38 @@ def build_gene_drug_table(chembl_df, drugbank_df, target_df, output_dir):
     gene_target_df = write_table(
         gene_target_df, 'gene_target', output_dir, add_index=False)
     return gene_target_df
+
+# TODO: fix this:
+"""
+The following gene_ids failed to map:
+    | gene_id           
+--- + ------------------
+  0 | ENSCAFG00000013762
+  1 | ENSG00000001630   
+  2 | ENSG00000006837   
+  3 | ENSG00000008128   
+  4 | ENSG00000010219   
+  5 | ENSG00000036473   
+  6 | ENSG00000062485   
+  7 | ENSG00000070087   
+  8 | ENSG00000070756   
+  9 | ENSG00000073578   
+ 10 | ENSG00000075886   
+ 11 | ENSG00000088832   
+ 12 | ENSG00000099810   
+ 13 | ENSG00000100197   
+ 14 | ENSG00000100429   
+  … | …                 
+253 | ENSG00000288269   
+254 | ENSG00000288299   
+255 | ENSG00000288359   
+256 | ENSG00000288516   
+257 | ENSMUSG00000053004
+
+[258 rows x 1 column]
+
+Rows with these gene_ids will be deleted!
+"""
 
 
 def map_uniprot_to_ensembl(uniprot_ids):

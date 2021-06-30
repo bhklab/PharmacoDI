@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 
-def get_chembl_drug_target_mappings(drug_annotation_file, target_file, drug_target_file):
+def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_target_file):
     """
     Get drug target mappings for all drugs in the drug_annotation files (using standard
     inchi key to map between the file and ChEMBL) and all targets in the target file.
@@ -29,7 +29,7 @@ def get_chembl_drug_target_mappings(drug_annotation_file, target_file, drug_targ
     chembl_drug_df = pd.concat(parallelize(
         inchikeys, get_drugs_by_inchikey, 50))
     chembl_drug_df = pd.merge(
-        drug_df[['drug_id', 'inchikey']], chembl_drug_df, on='inchikey', how='inner')
+        drug_df[['compound_id', 'inchikey']], chembl_drug_df, on='inchikey', how='inner')
     chembl_drug_df.drop(columns='inchikey', inplace=True)
     molecule_ids = list(chembl_drug_df['molecule_chembl_id'])
 
@@ -54,7 +54,7 @@ def get_chembl_drug_target_mappings(drug_annotation_file, target_file, drug_targ
     drug_target_df = pd.merge(drug_target_df, target_df, on='target_chembl_id')
 
     # Reorder columns and write to .csv
-    drug_target_df = drug_target_df[['drug_id', 'molecule_chembl_id', 
+    drug_target_df = drug_target_df[['compound_id', 'molecule_chembl_id', 
         'target_chembl_id', 'pref_name', 'accession', 'target_type']].copy()
     drug_target_df.to_csv(drug_target_file)
     return drug_target_df

@@ -16,7 +16,7 @@ def get_metadata(file_name):
             f'No metadata file {file_name} could be found!')
     
     # Read csv file and return df
-    return pd.read_csv(file_name, index_col=[0])
+    return pd.read_csv(file_name)
 
 
 # --- SYNONYMS TABLES --------------------------------------------------------------------------
@@ -73,12 +73,12 @@ def build_compound_synonym_df(compound_file, output_dir):
 
     # Find all columns relevant to compoundid
     # Right now only FDA col is dropped, but may be more metadata in the future
-    pattern = re.compile('compoundid')
+    pattern = re.compile('drugid')
     compound_cols= compound_metadata[[
         col for col in compound_metadata.columns if pattern.search(col)]]
 
     # Get all unique synonyms and join with compounds_df
-    compound_synonym_df = melt_and_join(compound_cols, 'unique.compoundid', compound_df)
+    compound_synonym_df = melt_and_join(compound_cols, 'unique.drugid', compound_df)
     compound_synonym_df = compound_synonym_df.rename(columns={'id': 'compound_id', 'value': 'compound_name'})
 
     # Add blank col for dataset_id (TODO)

@@ -6,7 +6,7 @@ import numpy as np
 from datetime import date
 from .build_primary_pset_tables import build_primary_pset_tables, build_cell_df, build_compound_df, build_tissue_df
 from .build_experiment_tables import build_experiment_tables, build_experiment_df
-from .build_meta_tables import build_gene_compound_tissue_df
+from .build_gene_compound_tissue_dataset_tables import build_gene_compound_tissue_dataset_df
 from .write_pset_table import write_pset_table
 from .build_dataset_join_tables import build_dataset_join_dfs
 
@@ -38,16 +38,16 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
         pset_dict, pset_name, pset_dfs['cell'])}
 
     # Build gene compounds table
-    print('Building gene compound table...')
-    pset_dfs['gene_compound'] = build_gene_compound_tissue_df(gene_sig_dir, pset_name)
-    if not isinstance(pset_dfs['gene_compound'], pd.DataFrame):
-        del pset_dfs['gene_compound']
+    print('Building gene_compound_tissue_dataset table...')
+    pset_dfs['gene_compound_tissue_dataset'] = build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name)
+    if not isinstance(pset_dfs['gene_compound_tissue_dataset'], pd.DataFrame):
+        del pset_dfs['gene_compound_tissue_dataset']
 
     # Build summary/stats tables
     print('Building mol_cell and dataset_stats tables...')
-    if 'gene_compound' in pset_dfs:
+    if 'gene_compound_tissue_dataset' in pset_dfs:
         pset_dfs['mol_cell'] = build_mol_cell_df(
-            pset_dict, pset_name, pset_dfs['gene_compound'], pset_dfs['dataset_cell'])
+            pset_dict, pset_name, pset_dfs['gene_compound_tissue_dataset'], pset_dfs['dataset_cell'])
     pset_dfs['dataset_statistics'] = build_dataset_stats_df(
         pset_dict, pset_name, pset_dfs)
 

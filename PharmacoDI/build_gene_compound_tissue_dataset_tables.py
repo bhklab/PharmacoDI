@@ -43,7 +43,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
 
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
-    gctd_df = gene_sig_df[['gene', 'compound', 'estimate', 'n', 'pvalue', 'df', \
+    gctd_df = gene_sig_df[['gene', 'drug', 'estimate', 'n', 'pvalue', 'df', \
                            'fdr', 'tissue', 'mDataType', 'lower', 'upper']].copy()
     # Chris: You will determine significance based on the fdr (false discovery rate) at alpha = 0.05, it will be TRUE or FALSE (or 1 or 0)
 

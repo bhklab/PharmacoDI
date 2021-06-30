@@ -36,11 +36,11 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 
     # Extract relelvant experiment columns
     experiment_df = pset_dict['sensitivity']['info'][[
-        '.rownames', 'cellid', 'compoundid']].copy()
+        '.rownames', 'cellid', 'drugid']].copy()
 
     # Rename columns
     experiment_df.rename(
-        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id', 'compoundid': 'compound_id'}, inplace=True)
+        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id', 'drugid': 'compound_id'}, inplace=True)
 
     # Add datset_id column
     experiment_df['dataset_id'] = pset_name

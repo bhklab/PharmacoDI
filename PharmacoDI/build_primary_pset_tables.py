@@ -67,7 +67,7 @@ def build_compound_df(pset_dict):
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
     @return: [`DataFrame`] The compound table
     """
-    compound_df = pd.Series(pd.unique(pset_dict['compound']['compoundid']), name='name')
+    compound_df = pd.Series(pd.unique(pset_dict['drug']['drugid']), name='name')
     return compound_df
 
 
@@ -111,7 +111,7 @@ def build_compound_annotation_df(pset_dict):
     @return: [`DataFrame`] A table of all compound annotations, mapped to compounds
     """
     # Make compound_annotations df
-    compound_annotation_df = pset_dict['compound'][[
+    compound_annotation_df = pset_dict['drug'][[
         'rownames', 'smiles', 'inchikey', 'cid', 'FDA']].copy()
     compound_annotation_df.rename(
         columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, inplace=True)

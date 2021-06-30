@@ -6,7 +6,7 @@ from .get_target_annotations import get_target_annotations, query_uniprot_mappin
 from .read_pset import pset_df_to_nested_dict, read_pset_file, read_pset
 from .build_all_pset_tables import build_all_pset_tables
 from .get_chembl_targets import get_chembl_targets
-from .get_chembl_drug_targets import get_chembl_drug_target_mappings
+from .get_chembl_compound_targets import get_chembl_compound_target_mappings
 from .build_target_tables import build_target_tables
 from .combine_pset_tables import combine_all_pset_tables
 from .build_synonym_tables import build_cell_synonym_df, build_compound_synonym_df, build_tissue_synonym_df

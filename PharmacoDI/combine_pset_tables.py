@@ -18,7 +18,7 @@ def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     join_dfs = combine_primary_tables(data_dir, output_dir, compound_meta_file)
     combine_secondary_tables(data_dir, output_dir, join_dfs)
     combine_experiment_tables(data_dir, output_dir, join_dfs)
-    combine_gene_compound_tables(data_dir, output_dir, join_dfs)
+    combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs)
 
 
 def combine_primary_tables(data_dir, output_dir, compound_uids_file):
@@ -39,7 +39,7 @@ def combine_primary_tables(data_dir, output_dir, compound_uids_file):
     # Special handling for compound table: join final table with compounds_with_ids.csv
     compound_df = load_table('compound', data_dir)
     compound_meta_df = dt.fread(compound_uids_file)
-    compound_meta_df.names = {'unique.compoundid': 'name', 'PharmacoDB.uid': 'compound_uid'}
+    compound_meta_df.names = {'unique.drugid': 'name', 'PharmacoDB.uid': 'compound_uid'}
     compound_meta_df = compound_meta_df[:, ['name', 'compound_uid']]
     compound_meta_df.key = 'name'
     compound_df = compound_df[:, :, dt.join(compound_meta_df)]
@@ -146,8 +146,8 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
                     add_index=(df_name == 'dose_response'))
 
 
-def combine_gene_compound_tables(data_dir, output_dir, join_dfs):
-    gd_df = load_table('gene_compound', data_dir)
+def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
+    gd_df = load_table('gene_compound_tissue_dataset', data_dir)
     tissue_df = join_dfs['tissue']
 
     # Regularize punctuation in tissue IDs before joining
@@ -165,10 +165,10 @@ def combine_gene_compound_tables(data_dir, output_dir, join_dfs):
 
     # Join on gene, compound, dataset, and tissue IDs
     for fk in ['gene', 'compound', 'dataset', 'tissue']:
-        print(f'Joining gene_compound table with {fk} table...')
+        print(f'Joining gene_compound_tissue_dataset table with {fk} table...')
         gd_df = join_tables(gd_df, join_dfs[fk], fk+'_id', ignore_versions=True)
 
-    write_table(gd_df, 'gene_compound', output_dir)
+    write_table(gd_df, 'gene_compound_tissue_dataset', output_dir)
 
 
 def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, add_index=True):
