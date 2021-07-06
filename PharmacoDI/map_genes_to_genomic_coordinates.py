@@ -1,5 +1,6 @@
 from datatable import update, f, dt
 import numpy as np
+import re
 
 def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_path):
     """
@@ -18,6 +19,9 @@ def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_pa
     gene = dt.fread(gene_path)
     gene_annot = dt.fread(gene_annotation_path)
     gencode = dt.fread(gencode_path)
+
+    vsub = np.vectorize(re.sub)
+    gencode[:, update(gene_id=vsub('[.][0-9]*$', '', gencode['gene_id'].to_numpy()))]
 
     # -- Add gene name back to gene_annotation
     gene.key = 'id'
