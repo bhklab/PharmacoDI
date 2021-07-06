@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='PharmacoDI',
-      version='0.0.6',
+      version='0.0.8',
       description="Tools for processing R PharmacoSet objects into .csv files of PharmacoDB database tables.",
       url='https://github.com/bhklab/DataIngestion/tree/master/PharmacoDI',
       install_requires=[

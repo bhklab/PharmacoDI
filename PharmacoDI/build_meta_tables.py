@@ -93,8 +93,8 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     if not gct_dt.nrows == gct_dt2.nrows:
         warnings.warn('The compound_gene_tissue table has lost some rows!')
 
-    gct_dt2.to_csv(os.path.join(output_dir, 'compound_gene_tissue.csv'))
-    return(gct_dt2)
+    gct_dt2.to_csv(os.path.join(output_dir, 'gene_compound_tissue.csv'))
+
 
 
 ## FIXME:: This function is almost identical to the previous one, refactor
@@ -192,7 +192,6 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
         warnings.warn('The gene_compound_dataset table has lost some rows!')
 
     gcd_dt2.to_csv(os.path.join(output_dir, 'gene_compound_dataset.csv'))
-    return(gcd_dt2)
 
 
 def build_gene_compound_df(gene_compound_file, gene_file, compound_file, 
