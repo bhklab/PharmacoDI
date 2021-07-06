@@ -1,5 +1,4 @@
-import datatable as dt
-from datatable import update, f
+from datatable import update, f, dt
 import numpy as np
 
 def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_path):
@@ -44,4 +43,5 @@ def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_pa
     gene_annotation[:, update(gene_seq_start=f.start, gene_seq_end=f.end, chr=f.seqnames)]
     del gene_annotation[:, ['name', 'id', 'start', 'end', 'seqnames']]
 
-    dt.fwrite(gene_annotation, file=gene_annotation_path)
+    gene_annotation.to_csv(gene_annotation_path)
+    return(gene_annotation)
