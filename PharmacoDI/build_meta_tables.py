@@ -5,6 +5,21 @@ import re
 from datatable import dt, f, g, join, sort, update, fread
 
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_meta_tables.log", "serialize": True},
+    ],
+    "extra": {"user": "someone"}
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file, 
     compound_file, tissue_file, output_dir):
     """
@@ -99,6 +114,7 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
 
 ## FIXME:: This function is almost identical to the previous one, refactor
 ##>into a helper for gene_compound instead of copy pasting code
+@logger.catch
 def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file, 
     compound_file, dataset_file, output_dir):
     """
@@ -193,7 +209,7 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
 
     gcd_dt2.to_csv(os.path.join(output_dir, 'gene_compound_dataset.csv'))
 
-
+@logger.catch
 def build_gene_compound_df(gene_compound_file, gene_file, compound_file, 
     output_dir):
     """

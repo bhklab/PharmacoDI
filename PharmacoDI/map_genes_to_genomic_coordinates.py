@@ -2,6 +2,21 @@ from datatable import update, f, dt
 import numpy as np
 import re
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/map_genes_to_genomic_coordinates.log", "serialize": True},
+    ],
+    "extra": {"user": "someone"}
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_path):
     """
     Reads in the gene and gene_annotation tables along with a gencode annotation file
