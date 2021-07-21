@@ -13,9 +13,10 @@ logger_config = {
     "handlers": [
         {"sink": sys.stdout, "colorize": True, "format": 
             "<green>{time}</green> <level>{message}</level>"},
-        {"sink": f"logs/build_meta_tables.log", "serialize": True},
-    ],
-    "extra": {"user": "someone"}
+        {"sink": f"logs/build_meta_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
 }
 logger.configure(**logger_config)
 
@@ -143,14 +144,19 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     gcd_dt = fread(gene_compound_dataset_file)
 
     # -- Fix names and assign missing columns
-    gcd_dt.names = {'gene': 'gene_id', 'drug': 'compound_id', 
-        'pSet': 'dataset_id'}
+    gcd_dt.names = {'gene': 'gene_id', 'compound': 'compound_id', 
+        'dataset': 'dataset_id', 'lower': 'lower_analytic', 
+        'upper': 'upper_analytic', 'pvalue': 'pvalue_analytic', 
+        'fdr': 'fdr_analytic'}
+    del gcd_dt[:, ['significant', 'tissue']]
+
     # Determine missing columns and assign them, so we don't have to change code 
     #>when new columns are addeds
     gcd_table_columns = np.asarray(('id', 'gene_id', 'compound_id', 'dataset_id', 
-        'estimate', 'lower', 'upper', 'n', 'tstat', 'fstat', 'pvalue', 'df',
-        'fdr', 'FWER_gene', 'FWER_compound', 'FWER_all', 'BF_p_all', 'sens_stat', 
-        'mDataType', 'tested_in_human_trials', 'in_clinical_trials'))
+        'estimate', 'lower_analytic', 'upper_analytic', 'lower_permutation',
+        'upper_permutation', 'n', 'pvalue_analytic', 'pvalue_permutation', 
+        'df', 'fdr_analytic', 'fdr_permutation', 'significant_permutation',
+        'permutation_done', 'sens_stat', 'mDataType'))
     gcd_missing_columns = np.setdiff1d(gcd_table_columns, np.asarray(gcd_dt.names))
     for col in gcd_missing_columns:
         gcd_dt[col] = None
@@ -159,6 +165,8 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     if not np.all(gcd_table_columns == np.asarray(gcd_dt1.names)):
         raise ValueError(f'The build_gene_compound_dataset table',
             ' has missing columns!')
+
+    gcd_dt1[:, update(sens_stat='AAC', permutation_done=0)]
 
     # -- Map to existing FK ids
     # gene id

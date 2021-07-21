@@ -35,7 +35,8 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     # If gene signature file doesn't exist, return empty DataFrame
     if not os.path.exists(os.path.join(gene_sig_dir, pset_name)):
         print(
-            f'WARNING: gene signature annotations file does not exist for {pset_name} in {gene_sig_dir}')
+            f'WARNING: gene signature annotations file does not exist for' 
+            '{pset_name} in {gene_sig_dir}')
         return None
 
     # Get gene_sig_df from gene_sig_file
@@ -43,35 +44,26 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
 
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
-    gctd_df = gene_sig_df[['gene', 'drug', 'estimate', 'n', 'pvalue', 'df', \
-                           'fdr', 'tissue', 'mDataType', 'lower', 'upper']].copy()
-    # Chris: You will determine significance based on the fdr (false discovery rate) at alpha = 0.05, it will be TRUE or FALSE (or 1 or 0)
+    gctd_df = gene_sig_df[['gene', 'drug', 'tissue', 'dataset',
+        'estimate_analytic', 'lower_analytic', 'upper_analytic', 
+        'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
+        'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
+        'significant_permutation', 'mDataType']].copy()
 
-    # Chris: 'sens_stat' - I will add this to the function for extracting per PSet gene signatures - for now it is always 'AAC' (Area above dose-response curve)
+    # Add missing columns
     gctd_df['sens_stat'] = 'AAC'
-    # Chris: Have renamed it to tested_in_human_trials, it will indicate a 1 if it has ever been tested in a human clinical trial (even if it failed)
-    # Chris: Source for this data will be clinicaltrails.gov
-    # TODO - check out API, leave NA for now
-    gctd_df['tested_in_human_trials'] = np.nan
-    gctd_df['in_clinical_trials'] = np.nan
+    gctd_df['permutation_done'] = 0
+    gctd_df[~gctd_df['fdr_analytic'].isna(), 'permutation_done'] = 1
 
     # Rename foreign key columns
-    gctd_df.rename(columns={'gene': 'gene_id', 'drug': 'compound_id', \
-                            'tissue': 'tissue_id'}, inplace=True)
-
-    # Add dataset id
-    gctd_df['dataset_id'] = pset_name
-
-    # Add missing columns (TODO - get this data)
-    gctd_df['tstat'] = np.nan
-    gctd_df['fstat'] = np.nan
-    gctd_df['FWER_genes'] = np.nan
-    gctd_df['FWER_compounds'] = np.nan
-    gctd_df['FWER_all'] = np.nan
-    gctd_df['BF_p_all'] = np.nan
+    gctd_df.rename(columns={'gene': 'gene_id', 'drug': 'compound_id',
+        'tissue': 'tissue_id', 'dataset': 'dataset_id',
+        'estimate_analytic': 'estimate'}, inplace=True)
 
     # Reorder columns
-    return gctd_df[['gene_id', 'compound_id', 'estimate', 'lower', 'upper', 'n', 'tstat', 
-                    'fstat', 'pvalue', 'df', 'fdr', 'FWER_genes', 'FWER_compounds', 'FWER_all',
-                    'BF_p_all', 'dataset_id', 'sens_stat', 'tissue_id', 'mDataType', 
-                    'tested_in_human_trials', 'in_clinical_trials']]
+    return gctd_df[['gene_id', 'compound_id', 'dataset_id', 'tissue_id',
+        'estimate', 'lower_analytic', 'upper_analytic', 
+        'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
+        'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
+        'significant_permutation', 'permutation_done', 'sens_stat', 
+        'mDataType']]
