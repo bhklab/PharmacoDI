@@ -49,7 +49,10 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
 
     # Get gene_sig_df from gene_sig_file
-    gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
+    try:
+        gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
+    except:
+        return None
 
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
