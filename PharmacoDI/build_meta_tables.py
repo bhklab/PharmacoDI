@@ -40,6 +40,13 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
         if not os.path.exists(file):
             raise FileNotFoundError(f'Could not find the {file}')
 
+    ## FIXME: Workaround: Early return if this table is already created in 'latest'
+    ## FIXME: Find the old version of this table to the function works correctly
+    if os.path.exists(os.path.join(output_dir, 'gene_compound_tissue1.csv')):
+        gct_dt = dt.fread(os.path.join(output_dir, 'gene_compound_tissue1.csv'))
+        gct_dt.to_csv(os.path.join(output_dir, 'gene_compound_tissue.csv'))
+        return gct_dt
+
     # -- Read in mapping tables
     gene_dt = fread(gene_file)
     compound_dt = fread(compound_file)
@@ -49,8 +56,10 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     gct_dt = fread(gene_compound_tissue_file)
 
     # -- Fix names and assign missing columns
-    gct_dt.names = {'Gene': 'gene_id', 'Tissue': 'tissue_id', 
-        'Drug': 'compound_id', 'FWER_genes': 'FWER_gene'}
+    if np.all(np.isin(np.asarray(('Gene', 'Tissue', 'Drug', 'FWER_genes')), 
+        np.asarray(gct_dt.names))):
+            gct_dt.names = {'Gene': 'gene_id', 'Tissue': 'tissue_id', 
+                'Drug': 'compound_id', 'FWER_genes': 'FWER_gene'}
     # Determine missing columns and assign them, so we don't have to change code 
     #>when new columns are addeds
     gct_table_columns = np.asarray(('id', 'gene_id', 'compound_id', 'tissue_id', 
