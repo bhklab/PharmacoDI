@@ -3,7 +3,22 @@ import glob
 import pandas as pd
 import numpy as np
 
+# -- Enable logging
+from loguru import logger
+import sys
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_meta_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def read_gene_signatures(pset_name, file_path):
     """
     Read all gene signatures for a PSet (to be used in gene_compounds table) from the directory file_path.
@@ -22,7 +37,7 @@ def read_gene_signatures(pset_name, file_path):
     # Read .csv file and return df
     return pd.read_csv(pset_file[0])
 
-
+@logger.catch
 def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
     TODO - ask Chris to explain this table again
@@ -38,7 +53,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
 
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
-    gctd_df = gene_sig_df[['gene', 'drug', 'tissue', 'dataset',
+    gctd_df = gene_sig_df[['gene', 'compound', 'tissue', 'dataset',
         'estimate_analytic', 'lower_analytic', 'upper_analytic', 
         'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
         'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
@@ -50,7 +65,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     gctd_df[~gctd_df['fdr_analytic'].isna(), 'permutation_done'] = 1
 
     # Rename foreign key columns
-    gctd_df.rename(columns={'gene': 'gene_id', 'drug': 'compound_id',
+    gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
         'tissue': 'tissue_id', 'dataset': 'dataset_id',
         'estimate_analytic': 'estimate'}, inplace=True)
 
