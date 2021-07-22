@@ -14,7 +14,7 @@ def read_gene_signatures(pset_name, file_path):
     """
     # Find correct pset gene signature CSV file
     pset_file = glob.glob(
-        f'{os.path.join(file_path, pset_name, pset_name)}_gene_sig.csv')
+        f'{os.path.join(file_path, pset_name)}_gene_sig.csv')
     if len(pset_file) == 0:
         raise ValueError(
             f'No PSet gene signatures file named {pset_name} could be found in {file_path}')
@@ -32,12 +32,6 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     @param pset_name: [`string`] The name of the PSet
     @return: [`DataFrame`] The gene_compounds table for this PSet, containing all stats (?)
     """
-    # If gene signature file doesn't exist, return empty DataFrame
-    if not os.path.exists(os.path.join(gene_sig_dir, pset_name)):
-        print(
-            f'WARNING: gene signature annotations file does not exist for' 
-            '{pset_name} in {gene_sig_dir}')
-        return None
 
     # Get gene_sig_df from gene_sig_file
     gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
