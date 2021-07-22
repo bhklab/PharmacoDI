@@ -11,7 +11,7 @@ logger_config = {
     "handlers": [
         {"sink": sys.stdout, "colorize": True, "format": 
             "<green>{time}</green> <level>{message}</level>"},
-        {"sink": f"logs/build_meta_tables.log", 
+        {"sink": f"logs/build_gene_compound_tissue_dataset_tables.log", 
             "serialize": True, # Write logs as JSONs
             "enqueue": True}, # Makes logging queue based and thread safe
     ]
@@ -51,7 +51,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     # Get gene_sig_df from gene_sig_file
     try:
         gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
-    except:
+    except ValueError:
         return None
 
     # Extract relevant columns
