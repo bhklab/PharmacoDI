@@ -62,7 +62,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     # Add missing columns
     gctd_df['sens_stat'] = 'AAC'
     gctd_df['permutation_done'] = 0
-    gctd_df[~gctd_df['fdr_analytic'].isna(), 'permutation_done'] = 1
+    gctd_df.loc[~gctd_df['fdr_analytic'].isna(), 'permutation_done'] = 1
 
     # Rename foreign key columns
     gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
