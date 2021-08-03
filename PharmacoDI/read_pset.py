@@ -8,7 +8,7 @@ import swifter  # Library to parallelize apply statements automagically
 pset_name = 'GDSC_v1'
 file_path = os.path.join('data', 'rawdata')
 slot_names = ['curation', 'drug', 'molecularProfiles',
-              'sensitivity', 'annotation', 'cell']
+            'sensitivity', 'annotation', 'cell']
 
 
 def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularProfiles', 'sensitivity', 'annotation', 'cell']):
@@ -50,8 +50,8 @@ def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularPr
     pset_files_df.drop('file_paths', axis='columns', inplace=True)
 
     # Process id columns to use the proper slot names
-    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 0:-
-                                                     1].apply(lambda col: col.str.replace('.*@|.csv.gz$|.txt', ''))
+    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 0:- 1] \
+            .apply(lambda col: col.str.replace('.*@|.csv.gz$|.txt', ''))
     
     return pset_files_df
 
@@ -84,5 +84,5 @@ def pset_df_to_nested_dict(df):
                     df[1:].shape[1] > 2 else df.loc[df[df.columns[0]] == key, 'data'].values[0] for
                     key in pd.unique(df[df.columns[0]])}
         else:
-            # Return the data column if there no no key
+            # Return the data column if there is no key
             return df.iloc[:, -1].values[0]
