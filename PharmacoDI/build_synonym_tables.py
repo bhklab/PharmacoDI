@@ -1,69 +1,114 @@
-import os
-import re
+# old dependencies
 import glob
-import numpy as np
 import pandas as pd
-from datatable import Frame
 from PharmacoDI.combine_pset_tables import write_table
 
+# new dependenciess
+import os
+import warnings
+import numpy as np
+import re
+# NOTE: No melt/cast for datatable yet? Using polars instead
+from datatable import dt, f, g, join, sort, update, fread
+import polars as pl
 
-# TODO: add docstrings
+# -- Enable logging
+from loguru import logger
+import sys
 
-def get_metadata(file_name):
-    # Check that metadata file exists
-    if not os.path.exists(file_name):
-        raise ValueError(
-            f'No metadata file {file_name} could be found!')
-    
-    # Read csv file and return df
-    return pd.read_csv(file_name)
-
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_synonym_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
 
 # --- SYNONYMS TABLES --------------------------------------------------------------------------
 
+@logger.catch
 def build_cell_synonym_df(cell_file, output_dir):
+
     # Get metadata file and cell_df
-    cell_metadata = get_metadata(cell_file)
-    cell_df = pd.read_csv(os.path.join(output_dir, 'cell.csv'))
+    cell_metadata = pl.read_csv(cell_file, null_values='NA')
+    cell_df = pl.read_csv(os.path.join(output_dir, 'cell.csv'), null_values='NA')
+
     # Find all columns relevant to cellid
-    pattern = re.compile('cellid')
-    cell_columns = cell_metadata[[
-        col for col in cell_metadata.columns if pattern.search(col)]]
+    cell_cols = [col for col in cell_metadata.columns if 
+        re.match('.*cellid$', col) and col != 'unique.cellid']
+
+    # Read in which datasets we are working with
+    dataset_names = os.listdir('procdata')
+    clean_dataset_names = [re.sub('_.*$', '', name) for name in dataset_names]
+    dataset_regex = re.compile('|'.join(clean_dataset_names))
+
+    # Filter the cellid columns to only valid datasets
+    cell_columns = [name for name in cell_cols if 
+        re.match(dataset_regex, name)]
 
     # Get all unique synonyms and join with cell_df
-    cell_synonym_df = melt_and_join(cell_columns, 'unique.cellid', cell_df)
-    cell_synonym_df = cell_synonym_df.rename(columns={'id': 'cell_id', 'value': 'cell_name'})
+    cell_meta_long = cell_metadata \
+            .melt(id_vars='unique.cellid', value_vars=cell_columns) \
+            .drop_nulls() \
+            .drop_duplicates() \
+            .rename({'value': 'cell_name'})
+            #.select(['unique.cellid', 'value']) \
+            
+    cell_synonym_df = cell_df \
+        .join(cell_meta_long, left_on='name', right_on='unique.cellid', how='left') \
+        .drop(['tissue_id', 'name']) \
+        .drop_duplicates() \
+        .rename({'id': 'cell_id'})
 
-    # Add blank col for dataset_id (TODO)
-    cell_synonym_df['dataset_id'] = np.nan
-
+    # Add blank col for dataset_id
+    cell_synonym_df['dataset_id'] = np.nan * np.empty(cell_synonym_df.shape[0])
+    cell_synonym_df['id'] = range(1, cell_synonym_df.shape[0] + 1)
+    
     # Convert to datatable.Frame for fast write to disk
-    df = Frame(cell_synonym_df)
-    df = write_table(df, 'cell_synonym', output_dir)
-    return df
+    cell_synonym_df.to_csv(os.path.join(output_dir, 'cell_synonym.csv'))
+    return cell_synonym_df
     
 
+@logger.catch
 def build_tissue_synonym_df(tissue_file, output_dir):
     # Get metadata file and tissue_df (assume taht tissue_df is also in output_dir)
-    tissue_metadata = get_metadata(tissue_file)
-    tissue_df = pd.read_csv(os.path.join(output_dir, 'tissue.csv'))
+    tissue_metadata = pl.read_csv(tissue_file, null_values='NA')
+    tissue_df = pl.read_csv(os.path.join(output_dir, 'tissue.csv'), null_values='NA')
 
     # Find all columns relevant to tissueid
-    pattern = re.compile('tissueid')
-    tissue_cols = tissue_metadata[[
-        col for col in tissue_metadata.columns if pattern.search(col)]]
+    tissue_cols = [col for col in tissue_metadata.columns if 
+        re.match('.*tissueid$', col) and col != 'unique.tissueid']
 
-    # Get all unique synonyms and join with tissue_df
-    tissue_synonym_df = melt_and_join(tissue_cols, 'unique.tissueid', tissue_df)
-    tissue_synonym_df = tissue_synonym_df.rename(columns={'id': 'tissue_id', 'value': 'tissue_name'})
+    # Read in which datasets we are working with
+    dataset_names = os.listdir('procdata')
+    clean_dataset_names = [re.sub('_.*$', '', name) for name in dataset_names]
+    dataset_regex = re.compile('|'.join(clean_dataset_names))
 
-    # Add blank col for dataset_id (TODO)
-    tissue_synonym_df['dataset_id'] = np.nan
+    # Filter the cellid columns to only valid datasets
+    tissue_columns = [name for name in tissue_cols if 
+        re.match(dataset_regex, name)]
+
+    # Get all unique synonyms and join with cell_df
+    tissue_meta_long = tissue_metadata \
+            .melt(id_vars='unique.tissueid', value_vars=tissue_columns) \
+            .drop_nulls() \
+            .drop_duplicates() \
+            .rename({'value': 'tissue_name'})
+    
+    tissue_synonym_df = tissue_df \
+        .join(tissue_meta_long, left_on='name', right_on='unique.tissueid', how='left') \
+        .drop_duplicates()
+
+    # Add blank col for dataset_id
+    tissue_synonym_df['dataset_id'] = np.nan * np.empty(tissue_synonym_df.shape[0])
+    tissue_synonym_df['id'] = range(1, tissue_synonym_df.shape[0] + 1)
 
     # Convert to datatable.Frame for fast write to disk
-    df = Frame(tissue_synonym_df)
-    df = write_table(df, 'tissue_synonym', output_dir)
-    return df
+    tissue_synonym_df.to_csv(os.path.join(output_dir, 'tissue_synonym.csv'))
+    return tissue_synonym_df
 
 
 def build_compound_synonym_df(compound_file, output_dir):

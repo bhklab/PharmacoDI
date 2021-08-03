@@ -41,7 +41,7 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
             raise FileNotFoundError(f'Could not find the {file}')
 
     ## FIXME: Workaround: Early return if this table is already created in 'latest'
-    ## FIXME: Find the old version of this table to the function works correctly
+    ## FIXME: Find the old version of this table so the function works correctly
     if os.path.exists(os.path.join(output_dir, 'gene_compound_tissue1.csv')):
         gct_dt = dt.fread(os.path.join(output_dir, 'gene_compound_tissue1.csv'))
         gct_dt.to_csv(os.path.join(output_dir, 'gene_compound_tissue.csv'))
