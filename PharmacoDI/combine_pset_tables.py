@@ -206,14 +206,12 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
     @return: [`datatable.Frame`] The final combined and joined table
     """
     df = load_table(name, data_dir)
-
     for fk in foreign_keys:
         logger.info(f'Joining {name} table with {fk} table...')
         if fk not in join_dfs:
             raise KeyError(f'The {name} table has the foreign key {fk}_id but \
                             there is no {fk} table in the join tables dictionary.')
         df = join_tables(df, join_dfs[fk], f'{fk}_id')
-
     df = write_table(df, name, output_dir, add_index)
     return df
 
@@ -280,9 +278,7 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
         logger.info(f'{join_col} is missing from one or both of the datatables passed!',
             'Make sure you have prepared df2 using rename_and_key().')
         return None
-
     df = df1[:, :, dt.join(df2)]
-
     # If joining on gene_id, try dropping version numbers and joining again
     # TODO: vectorize this
     if ignore_versions and (join_col == 'gene_id') and (df[dt.isna(df[:, 'id']), :].nrows > 0):
@@ -291,25 +287,21 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
         gene_col = gene_col.to_pandas()
         gene_col.replace('\.[0-9]+$', '', regex=True, inplace=True)
         df[dt.isna(df[:, 'id']), join_col] = dt.Frame(gene_col)
-
         # Remove version numbers from gene_ids in gene df
         df2 = df2.to_pandas()
         df2.replace('\.[0-9]+$', '', regex=True, inplace=True)
         df2.drop_duplicates(subset=['gene_id'], inplace=True)
         df2 = dt.Frame(df2)
         df2.key = 'gene_id'
-
         # Make a copy of all unmatched rows in gene_compound, and delete 'id' col (N/A)
         unmatched_df = df[dt.isna(df[:, 'id']), :].copy()
         del unmatched_df[:, 'id']
         # Join unmatched rows with new gene df, and concat with rows that
         # were matched in the previous join
         df = dt.rbind(df[dt.f.id > 0, :], unmatched_df[:, :, dt.join(df2)])
-
         # NOTE: datatable doesn't currently have a string replace or regex function
         # This code should be updated when datatable introduced Version 1.0, which
         # will have a re module for these types of regex operations
-
     # Check to see if any FKs are null
     if df[dt.isna(df[:, 'id']), :].nrows > 0:
         logger.info(f'The following {join_col}s failed to map:')
@@ -319,11 +311,9 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
         if delete_unjoined:
             logger.info(f'Rows with these {join_col}s will be deleted!')
             del df[dt.isna(df[:, 'id']), :]
-
     # Rename the join col and drop it
     df.names = {join_col: 'drop', 'id': join_col}
     del df[:, 'drop']
-
     return df
 
 @logger.catch
@@ -338,10 +328,8 @@ def write_table(df, name, output_dir, add_index=True):
     @return: [`datatable.Frame`] The indexed PharmacoDB table
     """
     logger.info(f'Writing {name} table to {output_dir}...')
-
     if add_index:
         # Index datatable
         df = dt.cbind(dt.Frame(id=np.arange(df.nrows) + 1), df)
-
     df.to_csv(os.path.join(output_dir, f'{name}.csv'))
     return df
