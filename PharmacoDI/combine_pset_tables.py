@@ -4,7 +4,24 @@ import re
 import numpy as np
 import pandas as pd
 import datatable as dt
+import polars as pl
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/combine_all_pset_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     """
     Combine all PSet tables into the final PharmacoDB tables.
@@ -14,13 +31,13 @@ def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     @return: [`dict(string: datatable.Frame)`] A dictionary of all some of the
         final tables, with names as keys, to be used for later joins
     """
-    print("Combining all PSet tables...")
+    logger.info("Combining all PSet tables...")
     join_dfs = combine_primary_tables(data_dir, output_dir, compound_meta_file)
     combine_secondary_tables(data_dir, output_dir, join_dfs)
     combine_experiment_tables(data_dir, output_dir, join_dfs)
     combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs)
 
-
+@logger.catch
 def combine_primary_tables(data_dir, output_dir, compound_uids_file):
     """
     Build all the primary tables, i.e., tables that require no joins,
@@ -53,7 +70,7 @@ def combine_primary_tables(data_dir, output_dir, compound_uids_file):
     dfs['dataset'] = rename_and_key(dataset_df, 'dataset_id')
     return dfs
 
-
+@logger.catch
 def combine_secondary_tables(data_dir, output_dir, join_dfs):
     """
     Build all secondary tables, i.e., all tables that have foreign keys corresponding
@@ -109,7 +126,7 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
 
     return join_dfs
 
-
+@logger.catch
 def combine_experiment_tables(data_dir, output_dir, join_dfs):
     """
     Load and process experiment table, then use it to build the dose response
@@ -145,7 +162,7 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
         write_table(df, df_name, output_dir,
                     add_index=(df_name == 'dose_response'))
 
-
+@logger.catch
 def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
     gd_df = load_table('gene_compound_tissue_dataset', data_dir)
     tissue_df = join_dfs['tissue']
@@ -165,12 +182,12 @@ def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
 
     # Join on gene, compound, dataset, and tissue IDs
     for fk in ['gene', 'compound', 'dataset', 'tissue']:
-        print(f'Joining gene_compound_tissue_dataset table with {fk} table...')
+        logger.info(f'Joining gene_compound_tissue_dataset table with {fk} table...')
         gd_df = join_tables(gd_df, join_dfs[fk], fk+'_id', ignore_versions=True)
 
     write_table(gd_df, 'gene_compound_tissue_dataset', output_dir)
 
-
+@logger.catch
 def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, add_index=True):
     """
     Given the name of a table, load all PSet tables of that name from data_dir,
@@ -191,16 +208,16 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
     df = load_table(name, data_dir)
 
     for fk in foreign_keys:
-        print(f'Joining {name} table with {fk} table...')
+        logger.info(f'Joining {name} table with {fk} table...')
         if fk not in join_dfs:
             raise KeyError(f'The {name} table has the foreign key {fk}_id but \
                             there is no {fk} table in the join tables dictionary.')
-        df = join_tables(df, join_dfs[fk], fk+'_id')
+        df = join_tables(df, join_dfs[fk], f'{fk}_id')
 
     df = write_table(df, name, output_dir, add_index)
     return df
 
-
+@logger.catch
 def load_table(name, data_dir):
     """
     Load all PSet tables with name into a datatable, dropping any duplicate rows.
@@ -209,7 +226,7 @@ def load_table(name, data_dir):
     @param data_dir: [`string`] File path to the directory with all PSet tables
     @return: [`datatable.Frame`] A datatable containing all rows from all PSets
     """
-    print(f'Loading PSet-specific {name} tables from {data_dir}...')
+    logger.info(f'Loading PSet-specific {name} tables from {data_dir}...')
     # Get all files
     files = glob.glob(os.path.join(data_dir, '**', f'*{name}.csv'))
     # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
@@ -225,7 +242,7 @@ def load_table(name, data_dir):
     
     return df
 
-
+@logger.catch
 def rename_and_key(df, join_col, og_col='name'):
     """
     Prepare df to be joined with other tables by renaming the column
@@ -239,13 +256,13 @@ def rename_and_key(df, join_col, og_col='name'):
     """
     # Rename primary key to match foreign key name (necessary for joins)
     df.names = {og_col: join_col}
-    # Only select necessary rows
+    # Only select necessary columns
     df = df[:, ['id', join_col]]
     # Set the key
     df.key = join_col
-    return df  # Not necessary? df passed by reference
+    return df
 
-
+@logger.catch
 def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True):
     """
     Join df2 and df1 based on join_col (left outer join by default).
@@ -260,8 +277,8 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
     @return [`datatable.Frame`] The new, joined table
     """
     if (join_col not in df1.names) or (join_col not in df2.names):
-        print(f'{join_col} is missing from one or both of the datatables passed!',
-              'Make sure you have prepared df2 using rename_and_key().')
+        logger.info(f'{join_col} is missing from one or both of the datatables passed!',
+            'Make sure you have prepared df2 using rename_and_key().')
         return None
 
     df = df1[:, :, dt.join(df2)]
@@ -295,12 +312,12 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
 
     # Check to see if any FKs are null
     if df[dt.isna(df[:, 'id']), :].nrows > 0:
-        print(f'The following {join_col}s failed to map:')
+        logger.info(f'The following {join_col}s failed to map:')
         unmatched = df[dt.isna(df[:, 'id']), join_col].copy()
         unmatched = unmatched[0, :, dt.by(join_col)]
-        print(unmatched)
+        logger.info(unmatched)
         if delete_unjoined:
-            print(f'Rows with these {join_col}s will be deleted!')
+            logger.info(f'Rows with these {join_col}s will be deleted!')
             del df[dt.isna(df[:, 'id']), :]
 
     # Rename the join col and drop it
@@ -309,7 +326,7 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
 
     return df
 
-
+@logger.catch
 def write_table(df, name, output_dir, add_index=True):
     """
     Add a primary key to df ('id' column) and write it to output_dir
@@ -320,7 +337,7 @@ def write_table(df, name, output_dir, add_index=True):
     @param output_dir: [`string`] The directory to write the table to
     @return: [`datatable.Frame`] The indexed PharmacoDB table
     """
-    print(f'Writing {name} table to {output_dir}...')
+    logger.info(f'Writing {name} table to {output_dir}...')
 
     if add_index:
         # Index datatable

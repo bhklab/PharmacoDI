@@ -10,7 +10,22 @@ from .build_gene_compound_tissue_dataset_tables import build_gene_compound_tissu
 from .write_pset_table import write_pset_table
 from .build_dataset_join_tables import build_dataset_join_dfs
 
+# -- Enable logging
+from loguru import logger
+import sys
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_all_pset_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     """
     Build all tables for a dataset and write them to a directory of all processed data.
@@ -24,27 +39,27 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     pset_dfs = {}
 
     # Build primary tables (relating to cells, compounds, tissues, genes)
-    print('Building primary tables...')
+    logger.info('Building primary tables...')
     pset_dfs = build_primary_pset_tables(pset_dict, pset_name)
 
-    print('Building dataset join tables...')
+    logger.info('Building dataset join tables...')
     pset_dfs = {**pset_dfs, **build_dataset_join_dfs(
         pset_dict, pset_name, pset_dfs)}
 
     # Build experiment tables
-    print('Building experiment tables...')
+    logger.info('Building experiment tables...')
     # FIX: Modified to use pre-3.9 syntax to ensure backwards compatibility
     pset_dfs = {**pset_dfs, **build_experiment_tables(
         pset_dict, pset_name, pset_dfs['cell'])}
 
     # Build gene compounds table
-    print('Building gene_compound_tissue_dataset table...')
+    logger.info('Building gene_compound_tissue_dataset table...')
     pset_dfs['gene_compound_tissue_dataset'] = build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name)
     if not isinstance(pset_dfs['gene_compound_tissue_dataset'], pd.DataFrame):
         del pset_dfs['gene_compound_tissue_dataset']
 
     # Build summary/stats tables
-    print('Building mol_cell and dataset_stats tables...')
+    logger.info('Building mol_cell and dataset_stats tables...')
     if 'gene_compound_tissue_dataset' in pset_dfs:
         pset_dfs['mol_cell'] = build_mol_cell_df(
             pset_dict, pset_name, pset_dfs['gene_compound_tissue_dataset'], pset_dfs['dataset_cell'])
@@ -61,7 +76,7 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     log_file.write(f'on {date.today()}')
     log_file.close()
 
-
+@logger.catch
 def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=None):
     """
     Builds a table that summarizes the number of profiles, per cell line, per molecular data
@@ -120,7 +135,7 @@ def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=No
 
     return mol_cell_df
 
-
+@logger.catch
 def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
     """
     Summarizes how many cell lines, tissues, compounds, and experiments are contained

@@ -6,10 +6,9 @@ import pandas as pd
 import swifter  # Library to parallelize apply statements automagically
 
 pset_name = 'GDSC_v1'
-file_path = os.path.join('data', 'rawdata')
+file_path = 'rawdata'
 slot_names = ['curation', 'drug', 'molecularProfiles',
               'sensitivity', 'annotation', 'cell']
-
 
 def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularProfiles', 'sensitivity', 'annotation', 'cell']):
     """
@@ -50,8 +49,8 @@ def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularPr
     pset_files_df.drop('file_paths', axis='columns', inplace=True)
 
     # Process id columns to use the proper slot names
-    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 0:-
-                                                     1].apply(lambda col: col.str.replace('.*@|.csv.gz$|.txt', ''))
+    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 
+        0:-1].apply(lambda col: col.str.replace('.*@|.parquet$|.csv.gz$|.txt$', ''))
     
     return pset_files_df
 
@@ -59,7 +58,9 @@ def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularPr
 # ---- Helper methods for read_csv
 def read_pset_file(file_path):
     """Deal with text files which can't be read in with pd.read_csv"""
-    if '.csv.gz' in file_path:
+    if '.parquet' in file_path:
+        return pd.read_parquet(file_path)
+    elif '.csv.gz' in file_path:
         return pd.read_csv(file_path)
     elif '.txt' in file_path:
         with open(file_path) as f:
@@ -72,10 +73,12 @@ def read_pset_file(file_path):
 
 def pset_df_to_nested_dict(df):
     """
-    Recrusively turn unique values in the first column of a DataFrame into dictionary keys until only 1 column remains.
+    Recrusively turn unique values in the first column of a DataFrame into 
+    dictionary keys until only 1 column remains.
 
     @param df: [`DataFrame`] With one or more ID columns before a data column.
-    @return: [`dict`] A nested dict with levels equal to the number of columns of the original DataFrame minus one
+    @return: [`dict`] A nested dict with levels equal to the number of columns 
+        of the original DataFrame minus one
     """
     for key_check in pd.unique(df[df.columns[0]]):
         if key_check is not None:

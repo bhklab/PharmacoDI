@@ -21,7 +21,8 @@ logger.configure(**logger_config)
 @logger.catch
 def read_gene_signatures(pset_name, file_path):
     """
-    Read all gene signatures for a PSet (to be used in gene_compounds table) from the directory file_path.
+    Read all gene signatures for a PSet (to be used in gene_compounds table) 
+    from the directory file_path.
 
     @param pset_name: [`string`] The name of the PSet
     @param file_path: [`string`] The directory that holds all gene signature files
@@ -29,13 +30,13 @@ def read_gene_signatures(pset_name, file_path):
     """
     # Find correct pset gene signature CSV file
     pset_file = glob.glob(
-        f'{os.path.join(file_path, pset_name)}_gene_sig.csv')
+        f'{os.path.join(file_path, pset_name)}_gene_sig.parquet')
     if len(pset_file) == 0:
         raise ValueError(
-            f'No PSet gene signatures file named {pset_name}_gene_sig.csv could be found in {file_path}')
+            f'No PSet gene signatures file named {pset_name}_gene_sig.parquet could be found in {file_path}')
 
-    # Read .csv file and return df
-    return pd.read_csv(pset_file[0])
+    # Read .parquet file and return df
+    return pd.read_parquet(pset_file[0])
 
 @logger.catch
 def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
