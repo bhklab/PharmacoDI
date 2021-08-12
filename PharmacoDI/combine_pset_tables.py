@@ -331,5 +331,5 @@ def write_table(df, name, output_dir, add_index=True):
     if add_index:
         # Index datatable
         df = dt.cbind(dt.Frame(id=np.arange(df.nrows) + 1), df)
-    df.to_csv(os.path.join(output_dir, f'{name}.csv'))
+    df.to_jay(os.path.join(output_dir, f'{name}.jay'))
     return df

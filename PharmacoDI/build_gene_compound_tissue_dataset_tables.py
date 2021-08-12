@@ -61,7 +61,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
         'estimate_analytic', 'lower_analytic', 'upper_analytic', 
         'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
         'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
-        'significant_permutation', 'mDataType']].copy()
+        'significant_permutation', 'mDataType']]
 
     # Add missing columns
     gctd_df['sens_stat'] = 'AAC'
