@@ -2,12 +2,27 @@ import pandas as pd
 import os
 from multiprocessing import Pool, cpu_count
 from collections import defaultdict
-import datatable as dt
+from datatable import dt, fread, f, g, join
 from PharmacoDI.combine_pset_tables import join_tables, write_table, rename_and_key
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_cellosaurus.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
 
 # Using a default dict because it allows me to append duplicate indexes into a list
 # Helper for build_cellosaurus_df
+@logger.catch
 def build_defaultdict(tuple_list):
     def_dict = defaultdict(list)
     for tup in tuple_list:
@@ -15,7 +30,7 @@ def build_defaultdict(tuple_list):
     return def_dict
 
 
-# Only 1666 rows; try joining with cell synonym df instead ? (TODO)
+@logger.catch
 def build_cellosaurus_df(cellosaurus_path, output_dir):
     """
     Build cellosaurus table.
@@ -62,30 +77,16 @@ def build_cellosaurus_df(cellosaurus_path, output_dir):
     cellosaurus_df['cell_id'] = cellosaurus_df['identifier']
 
     # Load cell_df
-    cell_path = os.path.join(output_dir, 'cell.csv')
-    cell_df = rename_and_key(dt.fread(cell_path, sep=','), 'cell_id')
+    cell_path = os.path.join(output_dir, 'cell.jay')
+    cell_df = rename_and_key(dt.fread(cell_path), 'cell_id')
 
     # Convert to datatable and join with cell_df
-    df = join_tables(dt.Frame(cellosaurus_df), cell_df, 'cell_id')
-    df = df[dt.f.cell_id >= 1, :]
-    df = df[:, ['cell_id', 'identifier', 'accession', 'as', 'sy',
+    cellosaurus_df = dt.Frame(cellosaurus_df)
+    cellosaurus_df.key = 'cell_id'
+    df = cell_df[:, :, join(dt.Frame(cellosaurus_df))]
+    df = df[dt.f.id >= 1, :]
+    df = df[:, ['cell_id', 'id', 'accession', 'as', 'sy',
                 'dr', 'rx', 'ww', 'cc', 'st', 'di', 'ox', 'hi', 'oi', 'sx', 'ca']]
+    df.names = {'cell_id': 'identifier', 'id': 'cell_id'}
     df = write_table(df, 'cellosaurus', output_dir)
     return df
-
-
-#NOTE: These don't map:
-"""
->>> cell_df[~cell_df['id'].isin(ids)]
-        id       name  tissue_id
-141    142      BT179         19
-221    222   COLO_005         19
-222    223   COLO_011         19
-223    224   COLO_021         19
-481    482     HCC812          7
-742    743       KRIJ         19
-960    961  NCE G-28T          8 This one should map to CVCL_0V15
-1183  1184   OESO_009         19
-1184  1185   OESO_040         19
-1237  1238    PD1503a         19
-"""
