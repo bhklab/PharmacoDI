@@ -114,7 +114,8 @@ def build_compound_annotation_df(pset_dict):
     compound_annotation_df = pset_dict['drug'][[
         'rownames', 'smiles', 'inchikey', 'cid', 'FDA']].copy()
     compound_annotation_df.rename(
-        columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, inplace=True)
+        columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, 
+        inplace=True)
 
     return compound_annotation_df
 

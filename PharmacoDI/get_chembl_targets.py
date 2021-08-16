@@ -1,5 +1,6 @@
 from chembl_webresource_client.new_client import new_client
 import pandas as pd
+import numpy as np
 import os
 
 
@@ -43,3 +44,5 @@ def get_chembl_targets(target_file):
 
     target_df.to_csv(target_file)
     return target_df
+    
+    

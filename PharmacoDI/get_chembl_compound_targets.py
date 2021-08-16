@@ -2,8 +2,24 @@ from chembl_webresource_client.new_client import new_client
 import multiprocessing as mp
 import numpy as np
 import pandas as pd
-import os
+import re
+from datatable import dt, f, g, join, sort, update, fread
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/get_chembl_compound_targets.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+import os
 
 def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_target_file):
     """
@@ -19,24 +35,32 @@ def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_
     # Load drug annotations table
     if not os.path.exists(drug_annotation_file):
         raise FileNotFoundError(f"The file {drug_annotation_file} does not exist!")
-    drug_df = pd.read_csv(drug_annotation_file)
+    drug_df = fread(drug_annotation_file).to_pandas()
 
     # Get inchikeys of all drugs (not smiles bc capitalization in ChEMBL is inconsistent..)
     inchikeys = list(pd.unique(drug_df['inchikey'].dropna()))
 
     # Get ChEMBL drugs with matching inchikeys
-    print('Getting all drugs from ChEMBL...')
+    logger.info('Getting all drugs from ChEMBL...')
     chembl_drug_df = pd.concat(parallelize(
         inchikeys, get_drugs_by_inchikey, 50))
     chembl_drug_df = pd.merge(
         drug_df[['compound_id', 'inchikey']], chembl_drug_df, on='inchikey', how='inner')
+    updated_drug_df = pd.merge(drug_df, chembl_drug_df, 
+        on=['inchikey', 'compound_id'], how='left')
     chembl_drug_df.drop(columns='inchikey', inplace=True)
     molecule_ids = list(chembl_drug_df['molecule_chembl_id'])
 
+    # Write updated compound_annotations to disk
+    logger.info(f'Writing updated compound_annotation table to {output_dir}')
+    updated_drug_df.rename({'molecule_chembl_id': 'chembl_id'}, inplace=True)
+    dt.Frame(updated_drug_df).to_jay(drug_annotation_file)
+
     # Get targets from target_file
     if not os.path.exists(target_file):
-        print(f"ERROR: the ChEMBL target file {target_file} doesn't exist!\n"
+        raise SusteError(f"ERROR: the ChEMBL target file {target_file} doesn't exist!\n"
               "Call get_chembl_targets to generate this file.")
+    
     target_df = pd.read_csv(target_file, index_col=0)
     target_df = target_df[['target_chembl_id',
                            'pref_name', 'target_type', 'accession']].copy()
@@ -45,7 +69,7 @@ def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_
 
     # Get mappings between drugs (molecule_ids) and targets (target_ids)
     # TODO: I'm not sure if parallelization actually helps for this API call
-    print('Getting drug-target mappings from ChEMBL...')
+    logger.info('Getting drug-target mappings from ChEMBL...')
     drug_target_mappings = parallelize(
         molecule_ids, get_drug_target_mappings, 50, target_ids)
     drug_target_df = pd.concat(drug_target_mappings).drop_duplicates()
@@ -65,7 +89,6 @@ def parallelize(queries, operation, chunksize, *args):
     """
     Splits queries into chunks of chunksize and then uses a pool to 
     parallelize operation on the query chunks.
-
     :queries: list of arguments passed to function (in tuples)
     :operation: function being parallelized
     :chuksize: integer representing how many queries each process should handle
@@ -74,7 +97,6 @@ def parallelize(queries, operation, chunksize, *args):
     chunked_queries = [queries[i:i+chunksize]
                        for i in np.arange(0, len(queries), chunksize)]
     pool = mp.Pool(mp.cpu_count())
-
     # If operation requires extra args, use pool.starmap instead of pool.map
     if args:
         for i in range(len(chunked_queries)):
@@ -82,7 +104,6 @@ def parallelize(queries, operation, chunksize, *args):
         results = pool.starmap(operation, chunked_queries)
     else:
         results = pool.map(operation, chunked_queries)
-
     pool.close()
     return results
 
@@ -101,9 +122,10 @@ def get_drugs_by_inchikey(inchikeys):
         ['molecule_chembl_id', 'molecule_structures'])
     for mol in molecules:
         inchikey = mol['molecule_structures']['standard_inchi_key']
-        chembl_drug_df = chembl_drug_df.append({'inchikey': inchikey,
-                                                'molecule_chembl_id': mol['molecule_chembl_id']},
-                                               ignore_index=True)
+        chembl_drug_df = chembl_drug_df \
+            .append({'inchikey': inchikey, 
+                'molecule_chembl_id': mol['molecule_chembl_id']},
+                ignore_index=True)
     return chembl_drug_df
 
 
