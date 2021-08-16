@@ -77,9 +77,8 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
 
     # -- Map to existing FK ids
     # gene id
-    gct_dt1.names = {'gene_id': 'gene_name'}
     gene_dt.names = {'id': 'gene_id', 'name': 'gene_name'}
-    gene_dt.key = 'gene_name'
+    gene_dt.key = 'gene_id'
     # NOTE: the g object references the joined tables namespace
     gct_dt1[:, update(gene_id=g.gene_id), join(gene_dt)]
 

@@ -41,7 +41,6 @@ def read_gene_signatures(pset_name, file_path):
 @logger.catch
 def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
-    TODO - ask Chris to explain this table again
 
     @param gene_sig_dir: [`string`] The file path to the directory containing the gene
         signatures for each PSet
@@ -58,7 +57,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
     gctd_df = gene_sig_df[['gene', 'compound', 'tissue', 'dataset',
-        'estimate_analytic', 'lower_analytic', 'upper_analytic', 
+        'estimate', 'lower_analytic', 'upper_analytic', 
         'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
         'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
         'significant_permutation', 'mDataType']]
@@ -70,8 +69,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
 
     # Rename foreign key columns
     gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
-        'tissue': 'tissue_id', 'dataset': 'dataset_id',
-        'estimate_analytic': 'estimate'}, inplace=True)
+        'tissue': 'tissue_id', 'dataset': 'dataset_id'}, inplace=True)
 
     # Reorder columns
     return gctd_df[['gene_id', 'compound_id', 'dataset_id', 'tissue_id',
