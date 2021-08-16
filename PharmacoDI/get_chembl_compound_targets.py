@@ -3,6 +3,7 @@ import multiprocessing as mp
 import numpy as np
 import pandas as pd
 import re
+import os
 from datatable import dt, f, g, join, sort, update, fread
 
 # -- Enable logging
@@ -19,7 +20,7 @@ logger_config = {
     ]
 }
 logger.configure(**logger_config)
-import os
+
 
 def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_target_file):
     """
@@ -106,6 +107,7 @@ def parallelize(queries, operation, chunksize, *args):
         results = pool.map(operation, chunked_queries)
     pool.close()
     return results
+
 
 
 def get_drugs_by_inchikey(inchikeys):

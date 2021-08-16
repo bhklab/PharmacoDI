@@ -1,13 +1,27 @@
 import os
 import requests
 import pandas as pd
-import datatable as dt
+from datatable import dt, fread, f, g, join
 from urllib3.exceptions import HTTPError
 from .get_chembl_compound_targets import parallelize
 from .combine_pset_tables import write_table
 
+# -- Enable logging
+from loguru import logger
+import sys
 
-# TODO: split into more helpers?
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_clinical_trails_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def build_clinical_trial_tables(output_dir):
     """
     Build the clinical trial and compound trial tables by querying the
@@ -19,11 +33,11 @@ def build_clinical_trial_tables(output_dir):
     @return: None
     """
     # Load compound synonym table
-    compound_file = os.path.join(output_dir, 'compound_synonym.csv')
-    compound_df = pd.read_csv(compound_file)[['compound_id', 'compound_name']]
+    compound_file = os.path.join(output_dir, 'compound_synonym.jay')
+    compound_df = fread(compound_file).to_pandas()[['compound_id', 'compound_name']]
 
     # Query clinicaltrials.gov API to get clinical trials by compound name
-    print('Getting clinical trials from clinicaltrials.gov...')
+    logger.info('Getting clinical trials from clinicaltrials.gov...')
     all_studies = parallelize(list(compound_df['compound_name']),
                               get_clinical_trials_by_compound_names, 50)
     studies_df = pd.concat(all_studies)
@@ -57,7 +71,7 @@ def build_clinical_trial_tables(output_dir):
     write_table(dt.Frame(compound_trial_df[['clinical_trial_id', 'compound_id']]), 'compound_trial', output_dir, add_index=False)
 
 
-# TODO: shorter names please?
+@logger.catch
 def get_clinical_trials_by_compound_names(compound_names):
     """
     Given a list of compound_names, query the clinicaltrial.gov API iteratively
@@ -65,16 +79,14 @@ def get_clinical_trials_by_compound_names(compound_names):
 
     @param compound_names: [`list(string)`] A list of (up to 50) compound names
     @return: [`pd.DataFrame`] A table of all studies, including their rank, study ID,
-                                NCT id, recruitment status, link, and compound name.
+        NCT id, recruitment status, link, and compound name.
     """
     all_studies = []
     for compound_name in compound_names:
         min_rank = 1
         max_rank = 1000
         # Make initial API call for this compound
-        studies, num_studies_returned, num_studies_found = get_clinical_trials_for_compound(
-            compound_name, min_rank, max_rank)
-
+        studies, num_studies_returned, num_studies_found = get_clinical_trials_for_compound(compound_name, min_rank, max_rank)
         # If not all studies were returned, make additional calls
         while num_studies_found > num_studies_returned:
             min_rank += 1000
@@ -87,7 +99,7 @@ def get_clinical_trials_by_compound_names(compound_names):
         all_studies.append(studies)
     return pd.concat(all_studies)
 
-
+@logger.catch
 def get_clinical_trials_for_compound(compound_name, min_rank, max_rank):
     """
     Given a compound_name, query the clinicaltrial.gov API to get all trials
@@ -98,7 +110,7 @@ def get_clinical_trials_for_compound(compound_name, min_rank, max_rank):
     @param compound_name: [`string`] A compound name
     @param min_rank: [`int`] The minimum rank of a retrieved study
     @param max_rank: [`int`] The maximum rank of a retrieved study
-    @return: [`pd.DataFrame`] A table of retrieved studies, including 
+    @return: [`pd.DataFrame`] A table of retrieved studies, including
         their rank, study ID, NCT id, recruitment status, and link.
     """
     # Make API call
@@ -111,17 +123,13 @@ def get_clinical_trials_for_compound(compound_name, min_rank, max_rank):
         'fmt': 'json'
     }
     r = requests.get(base_url, params=params)
-
     studies = pd.DataFrame(columns=['Rank', 'NCTId', 'OverallStatus', 'SeeAlsoLinkURL'])
-
     # Check that request was successful
     if r.status_code != 200:
-        print(f'API call for clinical trials related to {compound_name}',
+        logger.info(f'API call for clinical trials related to {compound_name}',
               ' failed for the following reason:\n', r.json()['Error'])
         return studies, 0, 0
-
     response = r.json()['StudyFieldsResponse']
     if 'StudyFields' in response:
         studies = pd.DataFrame(response['StudyFields'])
-
     return studies, response['NStudiesFound'], response['NStudiesReturned']
