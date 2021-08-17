@@ -1,11 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(name='PharmacoDI',
-      version='0.0.11',
+      version='0.0.12',
       description="Tools for processing R PharmacoSet objects into .csv files of PharmacoDB database tables.",
       url='https://github.com/bhklab/DataIngestion/tree/master/PharmacoDI',
       install_requires=[
-        'dask[dataframe]',
         'swifter',
         'datatable',
         'pandas',

@@ -1,7 +1,22 @@
 import pandas as pd
 from PharmacoDI.build_all_pset_tables import build_cell_df, build_compound_df, build_tissue_df
 
+# -- Enable logging
+from loguru import logger
+import sys
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_dataset_join_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def build_dataset_join_dfs(pset_dict, pset_name, primary_dfs={}):
     """
     Builds join tables summarizing the cell lines, tissues, and compounds 

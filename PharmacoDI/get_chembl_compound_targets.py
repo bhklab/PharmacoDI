@@ -27,7 +27,7 @@ def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_
     """
     Get drug target mappings for all drugs in the drug_annotation files (using standard
     inchi key to map between the file and ChEMBL) and all targets in the target file.
-    Write to drug_target file and return the resulting DataFrame.
+    Write to drug_target_file and return the resulting DataFrame.
 
     :drug_annotation_file: the full file path to the drug_annotation table
     :target_file: the full file path to the target csv file

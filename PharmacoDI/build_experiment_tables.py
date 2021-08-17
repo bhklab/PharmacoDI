@@ -2,7 +2,23 @@ import pandas as pd
 import numpy as np
 from PharmacoDI.build_primary_pset_tables import build_cell_df
 
+# -- Enable logging
+from loguru import logger
+import sys
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_experiment_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+
+@logger.catch
 def build_experiment_tables(pset_dict, pset_name, cell_df=None):
     """
     Build the experiment, dose response, and profile tables for a PSet 
@@ -20,6 +36,7 @@ def build_experiment_tables(pset_dict, pset_name, cell_df=None):
     return pset_dfs
 
 
+@logger.catch
 def build_experiment_df(pset_dict, pset_name, cell_df=None):
     """
     Build a table with all the experiments of a PSet.
@@ -68,6 +85,7 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 #   instead it modifies the copy of the variable with a reference to a different memory location (the new value)
 # - Outside of the function, the original variable still holds a reference to the old memory location; therefore
 #   the value of that object is not changed
+@logger.catch
 def build_dose_response_df(pset_dict, pset_name):
     """
     Build a table that, for each experiment in a dataset, lists the compound that was
@@ -114,6 +132,7 @@ def build_dose_response_df(pset_dict, pset_name):
     return dose_response_df
 
 
+@logger.catch
 def build_profile_df(pset_dict, pset_name):
     """
     TODO: ask Chris

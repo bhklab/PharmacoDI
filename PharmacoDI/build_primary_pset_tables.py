@@ -3,10 +3,14 @@ import glob
 import pandas as pd
 import numpy as np
 import polars as pl
+import re
 
 from polars import col
-from datatable import dt, fread, f, g, by, sort, join
+from datatable import dt, fread, f, g, by, sort
 
+# -- Enable logging
+from loguru import logger
+import sys
 
 logger_config = {
     "handlers": [
@@ -36,7 +40,7 @@ def build_primary_pset_tables(pset_dict, pset_name):
     pset_dfs['compound'] = build_compound_df(pset_dict)
     pset_dfs['compound_annotation'] = build_compound_annotation_df(pset_dict)
     pset_dfs['cell'] = build_cell_df(pset_dict)
-    # Don't make gene table if there are no molecular profiles (TODO - check with chris)
+    # Don't make gene table if there are no molecular profiles
     if 'molecularProfiles' in pset_dict:
         pset_dfs['gene'] = build_gene_df(pset_dict)
         pset_dfs['gene_annotation'] = build_gene_annotation_df(pset_dict)
@@ -112,8 +116,9 @@ def build_gene_annotation_df(pset_dict):
     gene_annotation_df['gene_id'] = gene_annotation_df['gene_id'] \
         .apply(lambda x: re.sub('\..*$', '', x))
     gene_annotation_df = gene_annotation_df \
-        .drop_duplicates()
-    return gene_annotation_df.to_pandas()
+        .drop_duplicates() \
+        .to_pandas()
+    return gene_annotation_df
 
 
 @logger.catch
