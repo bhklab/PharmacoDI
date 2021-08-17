@@ -5,6 +5,10 @@ import numpy as np
 import pandas as pd
 import swifter  # Library to parallelize apply statements automagically
 
+# -- Enable logging
+from loguru import logger
+import sys
+
 logger_config = {
     "handlers": [
         {"sink": sys.stdout, "colorize": True, "format": 

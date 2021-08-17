@@ -25,6 +25,7 @@ logger_config = {
 }
 logger.configure(**logger_config)
 
+
 @logger.catch
 def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     """
