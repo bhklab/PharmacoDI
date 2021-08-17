@@ -3,7 +3,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
-import datatable as dt
+from datatable import dt, fread, f, g, join, by, sort
 import polars as pl
 
 # -- Enable logging
@@ -21,6 +21,7 @@ logger_config = {
 }
 logger.configure(**logger_config)
 
+
 @logger.catch
 def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     """
@@ -37,8 +38,9 @@ def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     combine_experiment_tables(data_dir, output_dir, join_dfs)
     combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs)
 
+
 @logger.catch
-def combine_primary_tables(data_dir, output_dir, compound_uids_file):
+def combine_primary_tables(data_dir, output_dir, compound_meta_file):
     """
     Build all the primary tables, i.e., tables that require no joins,
     and return them in a dictionary.
@@ -52,16 +54,14 @@ def combine_primary_tables(data_dir, output_dir, compound_uids_file):
     tissue_df = load_join_write('tissue', data_dir, output_dir)
     gene_df = load_join_write('gene', data_dir, output_dir)
     dataset_df = load_join_write('dataset', data_dir, output_dir)
-
     # Special handling for compound table: join final table with compounds_with_ids.csv
     compound_df = load_table('compound', data_dir)
-    compound_meta_df = dt.fread(compound_uids_file)
+    compound_meta_df = dt.fread(compound_meta_file)
     compound_meta_df.names = {'unique.drugid': 'name', 'PharmacoDB.uid': 'compound_uid'}
     compound_meta_df = compound_meta_df[:, ['name', 'compound_uid']]
     compound_meta_df.key = 'name'
     compound_df = compound_df[:, :, dt.join(compound_meta_df)]
     compound_df = write_table(compound_df, 'compound', output_dir)
-
     # Transform tables to be used for joins
     dfs = {}
     dfs['tissue'] = rename_and_key(tissue_df, 'tissue_id')
@@ -69,6 +69,7 @@ def combine_primary_tables(data_dir, output_dir, compound_uids_file):
     dfs['gene'] = rename_and_key(gene_df, 'gene_id')
     dfs['dataset'] = rename_and_key(dataset_df, 'dataset_id')
     return dfs
+
 
 @logger.catch
 def combine_secondary_tables(data_dir, output_dir, join_dfs):
@@ -123,8 +124,8 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
     # mol_cells has Kallisto. not sure why. from CTRPv2 (TODO)
     load_join_write('dataset_statistics', data_dir,
                     output_dir, ['dataset'], join_dfs)
-
     return join_dfs
+
 
 @logger.catch
 def combine_experiment_tables(data_dir, output_dir, join_dfs):
@@ -142,15 +143,13 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
     experiment_df = load_join_write('experiment', data_dir, output_dir, [
                                     'cell', 'compound', 'dataset', 'tissue'], join_dfs)
     # Don't write the 'name' column
-    experiment_df[:, ['id', 'cell_id', 'compound_id', 'dataset_id', 'tissue_id']].to_csv(
-        os.path.join(output_dir, 'experiment.csv'))
-
+    experiment_df[:, ['id', 'cell_id', 'compound_id', 'dataset_id', 'tissue_id']] \
+        .to_csv(os.path.join(output_dir, 'experiment.csv'))
     # Rename columns and key experiment table based on experiment name and dataset id
     experiment_df.names = {'name': 'experiment_id'}
     experiment_df = experiment_df[:, ['id', 'experiment_id', 'dataset_id']]
     experiment_df.key = ('dataset_id', 'experiment_id')
     join_dfs['experiment'] = experiment_df
-
     # Nearly the same code as in load_join_write but has special case handling
     for df_name in ['dose_response', 'profile']:
         df = load_table(df_name, data_dir)
@@ -162,30 +161,19 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
         write_table(df, df_name, output_dir,
                     add_index=(df_name == 'dose_response'))
 
+
 @logger.catch
 def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
     gd_df = load_table('gene_compound_tissue_dataset', data_dir)
     tissue_df = join_dfs['tissue']
 
-    # Regularize punctuation in tissue IDs before joining
-    # TODO: fix with chris' vectorized version
-    for df in [gd_df, tissue_df]:
-        tissue_col = df[:, 'tissue_id'].copy().to_pandas()
-        tissue_col = tissue_col['tissue_id'].squeeze()
-        tissue_col = tissue_col.apply(lambda x: re.sub(' |/', '.', x))  
-        if df == tissue_df:
-            df.key = None
-            df['tissue_id'] = dt.Frame(tissue_col)
-            df.key = 'tissue_id'
-        else:
-            df['tissue_id'] = dt.Frame(tissue_col)
-
     # Join on gene, compound, dataset, and tissue IDs
     for fk in ['gene', 'compound', 'dataset', 'tissue']:
         logger.info(f'Joining gene_compound_tissue_dataset table with {fk} table...')
-        gd_df = join_tables(gd_df, join_dfs[fk], fk+'_id', ignore_versions=True)
+        gd_df = join_tables(gd_df, join_dfs[fk], f'{fk}_id', ignore_versions=True)
 
     write_table(gd_df, 'gene_compound_tissue_dataset', output_dir)
+
 
 @logger.catch
 def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, add_index=True):
@@ -215,6 +203,7 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
     df = write_table(df, name, output_dir, add_index)
     return df
 
+
 @logger.catch
 def load_table(name, data_dir):
     """
@@ -226,19 +215,17 @@ def load_table(name, data_dir):
     """
     logger.info(f'Loading PSet-specific {name} tables from {data_dir}...')
     # Get all files
-    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.csv'))
+    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.jay'))
     # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
     files = [file_name for file_name in files if re.search(
-        data_dir + r'/(\w+)/\1_' + name + '.csv$', file_name)]
+        data_dir + r'/(\w+)/\1_' + name + '.jay$', file_name)]
     # Read and concatenate tables
-    df = dt.rbind(*dt.iread(files, sep=','))
-    # Replace any empty strings with None/NA
-    df.replace("", None)
+    df = dt.rbind(*dt.iread(files))
     # Drop duplicates (groups by all columns and
     # selects only the first row from each group)
-    df = df[0, :, dt.by(df.names)]
-    
+    df = df[0, :, by(df.names)]
     return df
+
 
 @logger.catch
 def rename_and_key(df, join_col, og_col='name'):
@@ -260,6 +247,7 @@ def rename_and_key(df, join_col, og_col='name'):
     df.key = join_col
     return df
 
+
 @logger.catch
 def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True):
     """
@@ -268,7 +256,7 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
     @param df1: [`datatable.Frame`] The datatable with the foreign key
     @param df2: [`datatable.Frame`] The join table (ex. tissue datatable)
     @param join_col: [`string`] The name of the columns on which the tables
-                            will be joined (ex. 'tissue_id')
+        will be joined (ex. 'tissue_id')
     @param ignore_versions: [`bool`]
     @param delete_unjoined: [`bool`] An optional parameter (default=True)
         that lets you keep rows in df1 which didn't join to any rows in df2
@@ -316,6 +304,7 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
     del df[:, 'drop']
     return df
 
+
 @logger.catch
 def write_table(df, name, output_dir, add_index=True):
     """
@@ -333,3 +322,4 @@ def write_table(df, name, output_dir, add_index=True):
         df = dt.cbind(dt.Frame(id=np.arange(df.nrows) + 1), df)
     df.to_jay(os.path.join(output_dir, f'{name}.jay'))
     return df
+

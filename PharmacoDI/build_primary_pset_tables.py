@@ -2,8 +2,25 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import polars as pl
+
+from polars import col
+from datatable import dt, fread, f, g, by, sort, join
 
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/build_primary_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+
+@logger.catch
 def build_primary_pset_tables(pset_dict, pset_name):
     """
     Build the tissue, compound, and gene tables for a PSet and return them
@@ -26,6 +43,7 @@ def build_primary_pset_tables(pset_dict, pset_name):
     return pset_dfs
 
 
+@logger.catch
 def build_gene_df(pset_dict):
     """
     Build a table containing all genes in a dataset.
@@ -38,16 +56,12 @@ def build_gene_df(pset_dict):
         gene_df = gene_df.append(pd.Series(pd.unique(
             pset_dict['molecularProfiles'][mDataType]['rowData']['.features']),
             name='name', dtype='str'))
-
-    # Many ENSEMBL gene IDs have the version (ex. ENST00000456328.2 instead
-    # of ENST00000456328); remove all version numbers
-    # Keeping version numbers for now!
-    #gene_df.replace('\.[0-9]$', '', regex=True, inplace=True)
-    
+    gene_df.replace('\.[0-9]*$', '', regex=True, inplace=True)
     gene_df.drop_duplicates(inplace=True)
     return gene_df
 
 
+@logger.catch
 def build_tissue_df(pset_dict):
     """
     Build a table containing all tissues in a dataset.
@@ -60,6 +74,7 @@ def build_tissue_df(pset_dict):
     return tissue_df
 
 
+@logger.catch
 def build_compound_df(pset_dict):
     """
     Build a table containing all compounds in a dataset.
@@ -71,38 +86,37 @@ def build_compound_df(pset_dict):
     return compound_df
 
 
+@logger.catch
 def build_gene_annotation_df(pset_dict):
     """
     Build a table mapping each gene in a dataset to its gene annotations.
-
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
     @return: [`DataFrame`] A table of all gene annotations, mapped to genes
     """
-    gene_annotation_df = pd.DataFrame(
-        columns=['gene_id', 'symbol', 'gene_seq_start', 'gene_seq_end'], dtype='str')
-
-    for mDataType in pset_dict['molecularProfiles']:
-        df = pset_dict['molecularProfiles'][mDataType]['rowData'].copy()
-        # Get gene annotation columns
-        cols = ['.features']
-        if 'Symbol' in df.columns:
-            cols.append('Symbol')
-
-        df = df[cols]
-        df.rename(columns={'.features': 'gene_id',
-                           'Symbol': 'symbol'}, inplace=True)
-        gene_annotation_df = gene_annotation_df.append(df)
-
-    # Remove all ENSEMBL gene id version numbers (ex. ENST00000456328.2 instead of ENST00000456328)
-    # For now, we have decided to keep version numbers in the table, they are only dropped in joins
-    #gene_annotation_df['gene_id'].replace('\.[0-9]$', '',
-    #                                      regex=True, inplace=True)
-
-    gene_annotation_df.drop_duplicates(subset=['gene_id'], inplace=True)
-
-    return gene_annotation_df
+    # Extract the all molecular data types for the pSet
+    df_list = [pl.from_pandas(pset_dict['molecularProfiles'][mDataType]['rowData'])
+        for mDataType in pset_dict['molecularProfiles']]
+    # Get columns of interest, add columns needed later
+    for i in range(len(df_list)):
+        df_list[i] = df_list[i].select(['.features'])
+        empty_column = [None for _ in range(len(df_list[i]['.features']))]
+        df_list[i]['symbol'] = pl.Series('symbol', empty_column, dtype=pl.Utf8)
+        df_list[i]['gene_seq_start'] = pl.Series('gene_seq_start', 
+            empty_column, dtype=pl.Int64)
+        df_list[i]['gene_seq_end'] = pl.Series('gene_seq_end', 
+            empty_column, dtype=pl.Int64)
+    # Merge to a single DataFrame
+    gene_annotation_df = pl.concat(df_list) \
+        .rename({'.features': 'gene_id'})
+    # Remove Ensembl gene version
+    gene_annotation_df['gene_id'] = gene_annotation_df['gene_id'] \
+        .apply(lambda x: re.sub('\..*$', '', x))
+    gene_annotation_df = gene_annotation_df \
+        .drop_duplicates()
+    return gene_annotation_df.to_pandas()
 
 
+@logger.catch
 def build_compound_annotation_df(pset_dict):
     """
     Build a table mapping each compound in a dataset to its compound annotations.
@@ -116,11 +130,11 @@ def build_compound_annotation_df(pset_dict):
     compound_annotation_df.rename(
         columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, 
         inplace=True)
-
     return compound_annotation_df
 
 
 # TODO - confirm that you're using the correct cell id
+@logger.catch
 def build_cell_df(pset_dict):
     """
     Build a table containing all the cells in a dataset, mapped to their tissues.
@@ -131,5 +145,4 @@ def build_cell_df(pset_dict):
     cell_df = pset_dict['cell'][['cellid', 'tissueid']].copy()
     cell_df.rename(columns={'cellid': 'name',
                             'tissueid': 'tissue_id'}, inplace=True)
-
     return cell_df

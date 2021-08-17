@@ -1,6 +1,22 @@
 import os
-from datatable import Frame
+from datatable import dt, as_type
 
+# -- Enable logging
+from loguru import logger
+import sys
+
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/write_pset_tables.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
+@logger.catch
 def write_pset_table(pset_df, df_name, pset_name, df_dir):
     """
     Write a PSet table to a CSV file.
@@ -16,7 +32,12 @@ def write_pset_table(pset_df, df_name, pset_name, df_dir):
         os.mkdir(pset_path)
 
     # Convert to datatable Frame for fast write to disk
-    pset_df = Frame(pset_df)
+    pset_df = dt.Frame(pset_df)
+
+    # # Fix bad column type guesses in 
+    # if df_name == 'gene_annotation':
+    #     pset_df = pset_df[:, [f.gene_id, as_type(f.symbol, str32), 
+    #     as_type(f.gene_seq_start, int32), as_type(f.gene_seq_end, int32]]
 
     print(f'Writing {df_name} table to {pset_path}...')
     # Use datatable to convert df to csv

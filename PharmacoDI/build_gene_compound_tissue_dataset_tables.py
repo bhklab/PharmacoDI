@@ -18,6 +18,7 @@ logger_config = {
 }
 logger.configure(**logger_config)
 
+
 @logger.catch
 def read_gene_signatures(pset_name, file_path):
     """
@@ -34,9 +35,9 @@ def read_gene_signatures(pset_name, file_path):
     if len(pset_file) == 0:
         raise ValueError(
             f'No PSet gene signatures file named {pset_name}_gene_sig.parquet could be found in {file_path}')
-
     # Read .parquet file and return df
     return pd.read_parquet(pset_file[0])
+
 
 @logger.catch
 def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
@@ -47,30 +48,25 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     @param pset_name: [`string`] The name of the PSet
     @return: [`DataFrame`] The gene_compounds table for this PSet, containing all stats (?)
     """
-
     # Get gene_sig_df from gene_sig_file
     try:
         gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
     except ValueError:
         return None
-
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
-    gctd_df = gene_sig_df[['gene', 'compound', 'tissue', 'dataset',
+    gctd_df = gene_sig_df.loc[:, ['gene', 'compound', 'tissue', 'dataset',
         'estimate', 'lower_analytic', 'upper_analytic', 
         'lower_permutation', 'upper_permutation', 'n', 'pvalue_analytic', 
         'pvalue_permutation', 'df', 'fdr_analytic', 'fdr_permutation',
         'significant_permutation', 'mDataType']]
-
     # Add missing columns
-    gctd_df['sens_stat'] = 'AAC'
-    gctd_df['permutation_done'] = 0
+    gctd_df.loc[:, 'sens_stat'] = 'AAC'
+    gctd_df.loc[:, 'permutation_done'] = 0
     gctd_df.loc[~gctd_df['fdr_permutation'].isna(), 'permutation_done'] = 1
-
     # Rename foreign key columns
     gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
         'tissue': 'tissue_id', 'dataset': 'dataset_id'}, inplace=True)
-
     # Reorder columns
     return gctd_df[['gene_id', 'compound_id', 'dataset_id', 'tissue_id',
         'estimate', 'lower_analytic', 'upper_analytic', 

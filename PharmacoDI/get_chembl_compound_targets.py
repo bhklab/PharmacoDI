@@ -22,6 +22,7 @@ logger_config = {
 logger.configure(**logger_config)
 
 
+@logger.catch
 def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_target_file):
     """
     Get drug target mappings for all drugs in the drug_annotation files (using standard
@@ -86,6 +87,7 @@ def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_
 
 
 # TODO: add progress bar to parallelize
+@logger.catch
 def parallelize(queries, operation, chunksize, *args):
     """
     Splits queries into chunks of chunksize and then uses a pool to 
@@ -109,7 +111,7 @@ def parallelize(queries, operation, chunksize, *args):
     return results
 
 
-
+@logger.catch
 def get_drugs_by_inchikey(inchikeys):
     """
     Get all drugs in the ChEMBL database with matching inchikeys.
@@ -131,6 +133,7 @@ def get_drugs_by_inchikey(inchikeys):
     return chembl_drug_df
 
 
+@logger.catch
 def get_drug_target_mappings(molecule_ids, target_ids):
     """
     Retrieves mapping between drugs specified by ChEMBL molecule_ids and targets

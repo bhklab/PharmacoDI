@@ -5,11 +5,24 @@ import numpy as np
 import pandas as pd
 import swifter  # Library to parallelize apply statements automagically
 
+logger_config = {
+    "handlers": [
+        {"sink": sys.stdout, "colorize": True, "format": 
+            "<green>{time}</green> <level>{message}</level>"},
+        {"sink": f"logs/read_pset.log", 
+            "serialize": True, # Write logs as JSONs
+            "enqueue": True}, # Makes logging queue based and thread safe
+    ]
+}
+logger.configure(**logger_config)
+
 pset_name = 'GDSC_v1'
 file_path = 'rawdata'
 slot_names = ['curation', 'drug', 'molecularProfiles',
             'sensitivity', 'annotation', 'cell']
 
+
+@logger.catch
 def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularProfiles', 'sensitivity', 'annotation', 'cell']):
     """
     Read in all the data associated with a PharmacoSet from the .csv files exported by the writeToCsv method from rPharmacoDI.
@@ -56,11 +69,10 @@ def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularPr
 
 
 # ---- Helper methods for read_csv
+@logger.catch
 def read_pset_file(file_path):
     """Deal with text files which can't be read in with pd.read_csv"""
-    if '.parquet' in file_path:
-        return pd.read_parquet(file_path)
-    elif '.csv.gz' in file_path:
+    if '.csv.gz' in file_path:
         return pd.read_csv(file_path)
     elif '.parquet' in file_path:
         return pd.read_parquet(file_path)
@@ -73,6 +85,7 @@ def read_pset_file(file_path):
             f'Unsupported file type passed to this function from: {file_path}')
 
 
+@logger.catch
 def pset_df_to_nested_dict(df):
     """
     Recrusively turn unique values in the first column of a DataFrame into 
