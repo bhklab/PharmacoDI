@@ -95,8 +95,6 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
                     output_dir, ['compound'], join_dfs, add_index=False)
     # Build gene annotation table
     gene_annot_df = load_table('gene_annotation', data_dir)
-    # Remove any rows with no actual annotations (no symbol)
-    gene_annot_df = gene_annot_df[dt.f.symbol > "", :]
     # Join the other way so that genes that got cut out are included back in
     gene_annot_df.key = 'gene_id'
     gene_annot_df = join_tables(join_dfs['gene'], gene_annot_df, 'gene_id')

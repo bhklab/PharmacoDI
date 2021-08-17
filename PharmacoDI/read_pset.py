@@ -50,7 +50,7 @@ def read_pset(pset_name, file_path, slot_names=['curation', 'drug', 'molecularPr
     pset_files_df.drop('file_paths', axis='columns', inplace=True)
 
     # Process id columns to use the proper slot names
-    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 0:- 1] \
+    pset_files_df.iloc[:, 0:-1] = pset_files_df.iloc[:, 0:-1] \
             .apply(lambda col: col.str.replace('.*@|.csv.gz$|.parquet$|.txt$', ''))
     
     return pset_files_df
