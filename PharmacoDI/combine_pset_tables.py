@@ -205,7 +205,8 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
 @logger.catch
 def load_table(name, data_dir):
     """
-    Load all PSet tables with name into a datatable, dropping any duplicate rows.
+    Load all PSet tables with name into a datatable, dropping any duplicate 
+    rows.
     
     @param name: [`string`] The name of the table
     @param data_dir: [`string`] File path to the directory with all PSet tables

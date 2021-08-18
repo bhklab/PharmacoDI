@@ -2,6 +2,7 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import re
 
 # -- Enable logging
 from loguru import logger
@@ -34,7 +35,9 @@ def read_gene_signatures(pset_name, file_path):
         f'{os.path.join(file_path, pset_name)}_gene_sig.parquet')
     if len(pset_file) == 0:
         raise ValueError(
-            f'No PSet gene signatures file named {pset_name}_gene_sig.parquet could be found in {file_path}')
+            f'No PSet gene signatures file named {pset_name}_gene_sig.parquet '
+            'could be found in {file_path}'
+            )
     # Read .parquet file and return df
     return pd.read_parquet(pset_file[0])
 
@@ -42,11 +45,11 @@ def read_gene_signatures(pset_name, file_path):
 @logger.catch
 def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
-
-    @param gene_sig_dir: [`string`] The file path to the directory containing the gene
-        signatures for each PSet
+    @param gene_sig_dir: [`string`] The file path to the directory 
+        containing the gene signatures for each PSet
     @param pset_name: [`string`] The name of the PSet
-    @return: [`DataFrame`] The gene_compounds table for this PSet, containing all stats (?)
+    @return: [`DataFrame`] The gene_compounds table for this PSet, 
+        containing all stats (?)
     """
     # Get gene_sig_df from gene_sig_file
     try:
@@ -67,6 +70,8 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     # Rename foreign key columns
     gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
         'tissue': 'tissue_id', 'dataset': 'dataset_id'}, inplace=True)
+    gctd_df['gene_id'] = gctd_df['gene_id'] \
+        .apply(lambda x: re.sub('\..*$', '', x))
     # Reorder columns
     return gctd_df[['gene_id', 'compound_id', 'dataset_id', 'tissue_id',
         'estimate', 'lower_analytic', 'upper_analytic', 

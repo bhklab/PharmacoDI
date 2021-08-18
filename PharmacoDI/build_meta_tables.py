@@ -36,16 +36,9 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     output_dir then returns the table.
     """
     # -- Check the input files exist
-    for file in [gene_compound_tissue_file, gene_file, compound_file, tissue_file]:
-        if not os.path.exists(file):
-            raise FileNotFoundError(f'Could not find the {file}')
-
-    ## FIXME: Workaround: Early return if this table is already created in 'latest'
-    ## FIXME: Find the old version of this table so the function works correctly
-    if os.path.exists(os.path.join(output_dir, 'gene_compound_tissue1.csv')):
-        gct_dt = dt.fread(os.path.join(output_dir, 'gene_compound_tissue1.csv'))
-        gct_dt.to_csv(os.path.join(output_dir, 'gene_compound_tissue.csv'))
-        return gct_dt
+    for fl in [gene_compound_tissue_file, gene_file, compound_file, tissue_file]:
+        if not os.path.exists(fl):
+            raise FileNotFoundError(f'Could not find the {fl}')
 
     # -- Read in mapping tables
     gene_dt = fread(gene_file)
@@ -85,7 +78,7 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     # check for failed genes
     failed_genes = gct_dt1[dt.isna(f.gene_id), 'gene_name'].to_numpy().flatten()
     if len(failed_genes) > 0:
-        raise ValueError(f'Could not find the {file}')
+        raise ValueError(f'Genes {failed_genes} failed to map!')
 
     if (np.any(gct_dt1[:, dt.isna(f.gene_id)].to_numpy())):
         warnings.warn('Some gene_ids in gene_compound_tissue are still NA! Dropping'
@@ -117,7 +110,7 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     if not gct_dt.nrows == gct_dt2.nrows:
         warnings.warn('The compound_gene_tissue table has lost some rows!')
 
-    gct_dt2.to_csv(os.path.join(output_dir, 'gene_compound_tissue.csv'))
+    gct_dt2.to_jay(os.path.join(output_dir, 'gene_compound_tissue.jay'))
 
 
 
@@ -181,7 +174,8 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     gcd_dt1.names = {'gene_id': 'gene_name'}
     # fix gene ids that still have versions
     gsub = np.vectorize(re.sub)
-    gcd_dt1[f.gene_name.re_match('ENS.*[.][0-9]*'), 
+    gcd_dt1[
+        f.gene_name.re_match('ENS.*[.][0-9]*'), 
         update(gene_name=gsub('[.][0-9]*$', '', gcd_dt1[
             f.gene_name.re_match('ENS.*[.][0-9]*'), :]['gene_name'].to_numpy()))]
     gene_dt.names = {'id': 'gene_id', 'name': 'gene_name'}
@@ -223,7 +217,7 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     if not gcd_dt.nrows == gcd_dt2.nrows:
         warnings.warn('The gene_compound_dataset table has lost some rows!')
 
-    gcd_dt2.to_csv(os.path.join(output_dir, 'gene_compound_dataset.csv'))
+    gcd_dt2.to_jay(os.path.join(output_dir, 'gene_compound_dataset.jay'))
 
 @logger.catch
 def build_gene_compound_df(gene_compound_file, gene_file, compound_file, 
