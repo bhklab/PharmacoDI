@@ -219,7 +219,7 @@ def load_table(name, data_dir):
     files = [file_name for file_name in files if re.search(
         data_dir + r'/(\w+)/\1_' + name + '.jay$', file_name)]
     # Read and concatenate tables
-    df = dt.rbind(*dt.iread(files))
+    df = dt.rbind(*dt.iread(files), force=True)
     # Drop duplicates (groups by all columns and
     # selects only the first row from each group)
     df = df[0, :, by(df.names)]

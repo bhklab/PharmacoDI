@@ -5,8 +5,6 @@ import numpy as np
 import polars as pl
 import re
 
-from typing import Optional
-
 # -- Enable logging
 from loguru import logger
 import sys
@@ -50,7 +48,7 @@ def build_gene_compound_tissue_dataset_df(
         gene_sig_dir: str, 
         pset_name: str, 
         ignore_psets: list=['NCI60', 'PRISM']
-) -> Optional(pd.DataFrame):
+) -> pd.DataFrame:
     """
     @param gene_sig_dir: [`string`] The file path to the directory 
         containing the gene signatures for each PSet
