@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from PharmacoDI.build_primary_pset_tables import build_cell_df
+from .build_primary_pset_tables import build_cell_df
+from .utilties import harmonize_df_columns
 
 # -- Enable logging
 from loguru import logger
@@ -57,14 +58,15 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 
     # Rename columns
     experiment_df.rename(
-        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id', 'drugid': 'compound_id'}, inplace=True)
+        columns={'.rownames': 'experiment_id', 'cellid': 'cell_id',
+            'drugid': 'compound_id'}, inplace=True)
 
     # Add datset_id column
     experiment_df['dataset_id'] = pset_name
 
     # Add tissue_id column by joining with cells_df
     experiment_df = pd.merge(experiment_df, cell_df[['name', 'tissue_id']],
-                             left_on='cell_id', right_on='name', how='left')
+        left_on='cell_id', right_on='name', how='left')
     experiment_df = experiment_df[[
         'experiment_id', 'cell_id', 'compound_id', 'dataset_id', 'tissue_id']]
 
@@ -110,7 +112,7 @@ def build_dose_response_df(pset_dict, pset_name):
 
     # Reshape the DataFrames using melt to go from 'wide' to 'long'
     dose = dose.melt(id_vars='.exp_id', value_name='dose',
-                     var_name='dose_id').dropna()
+        var_name='dose_id').dropna()
     dose['dose_id'] = dose.dose_id.astype('int')
     response = response.melt(
         id_vars='.exp_id', value_name='response', var_name='dose_id').dropna()
@@ -133,34 +135,40 @@ def build_dose_response_df(pset_dict, pset_name):
 
 
 @logger.catch
-def build_profile_df(pset_dict, pset_name):
+def build_profile_df(
+        pset_dict: dict, 
+        pset_name: str, 
+        column_dict: dict={'experiment_id': 'str', 'HS': 'float', 'Einf': 'float', 
+            'EC50': 'float', 'AAC': 'float', 'IC50': 'float', 'DSS1': 'float',
+            'DSS2': 'float', 'DSS3': 'float'},
+        rename_dict: dict={'.rownames': 'experiment_id', 'einf': 'Einf', 
+            'E_inf': 'Einf', 'slope_recomputed': 'HS', 'aac_recomputed': 'AAC',
+            'ic50_recomputed': 'IC50', 'ec50': 'EC50'
+            }
+) -> pd.DataFrame:
     """
-    TODO: ask Chris
+    Build the molecular profile tables for PharmacoDB for the specified PSet
 
-    @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @param pset_name: [`string`] The name of the PSet
-    @return: [`pd.DataFrame`] A table containing all statistics for each profile 
-                                in the PSet (?)
+    @param pset_dict: A nested dictionary containing all tables in the PSet
+    @param pset_name: The name of the PSet
+    @param column_dict: Dictionary of required columns and their respective
+        types. Note that the id column type will not correspond to the
+        table schema, since mapping from this column is done later.
+    @param rename_dict: Dictionary mapping from PSet specific column names
+        to schema defined column names in PharmacoDB.
+    @return: A table containing all drug sensitivity summary statistics for 
+        in the PSet.
     """
-    # Get profiles info
-    if 'E_inf' in pset_dict['sensitivity']['profiles'].columns:
-        profile_df = pset_dict['sensitivity']['profiles'][[
-            '.rownames', 'aac_recomputed', 'ic50_recomputed', 'HS', 'E_inf', 'EC50']].copy()
-        profile_df.rename(columns={'.rownames': 'experiment_id', 'aac_recomputed': 'AAC',
-                                   'ic50_recomputed': 'IC50', 'E_inf': 'Einf'}, inplace=True)
-    else:
-        profile_df = pset_dict['sensitivity']['profiles'][[
-            '.rownames', 'aac_recomputed', 'ic50_recomputed', 'slope_recomputed', 'einf', 'ec50']].copy()
-        profile_df.rename(columns={'.rownames': 'experiment_id', 'aac_recomputed': 'AAC', 'slope_recomputed': 'HS',
-                                   'ic50_recomputed': 'IC50', 'einf': 'Einf', 'ec50': 'EC50'}, inplace=True)
-
-    # Add DSS columns - TODO get these values when they are eventually computed
-    profile_df['DSS1'] = np.nan
-    profile_df['DSS2'] = np.nan
-    profile_df['DSS3'] = np.nan
-
+    # Get profiles df and fix column names
+    profile_df = pset_dict['sensitivity']['profiles'].copy()
+    profile_df.rename(columns=rename_dict, inplace=True)
+    if 'experiment_id' not in profile_df.columns:
+        raise ValueError('No experiment_id column in sensitivity profiles!') 
+    # Check required columns
+    profile_df = harmonize_df_columns(
+        df=profile_df,
+        column_dict=column_dict
+    )
     # Add dataset_id for joins
     profile_df['dataset_id'] = pset_name
-
-    return profile_df[['experiment_id', 'HS', 'Einf', 'EC50', 'AAC',
-                       'IC50', 'DSS1', 'DSS2', 'DSS3', 'dataset_id']]
+    return profile_df

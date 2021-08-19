@@ -8,7 +8,7 @@ from .build_primary_pset_tables import build_primary_pset_tables, build_cell_df,
 from .build_experiment_tables import build_experiment_tables, build_experiment_df
 from .build_gene_compound_tissue_dataset_tables import build_gene_compound_tissue_dataset_df
 from .write_pset_table import write_pset_table
-from .build_dataset_join_tables import build_dataset_join_dfs
+from .build_dataset_join_tables import build_dataset_join_dfs, build_dataset_cell_df
 
 # -- Enable logging
 from loguru import logger
@@ -77,6 +77,7 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     log_file.write(f'on {date.today()}')
     log_file.close()
 
+
 @logger.catch
 def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=None):
     """
@@ -136,17 +137,20 @@ def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=No
 
     return mol_cell_df
 
+
 @logger.catch
 def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
     """
-    Summarizes how many cell lines, tissues, compounds, and experiments are contained
-    within the dataset.
+    Summarizes how many cell lines, tissues, compounds, and experiments 
+    are contained within the dataset.
 
-    @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
+    @param pset_dict: [`dict`] A nested dictionary containing all tables in 
+        the PSet
     @param pset_name: [`string`] The name of the PSet
-    @param pset_dfs: [`dict`] A dictionary of tables from the PSet, with table names 
-                                as the keys
-    @return: [`pd.DataFrame`] A one-row table with the summary stats for this PSet
+    @param pset_dfs: [`dict`] A dictionary of tables from the PSet, 
+        with table names as the keys
+    @return: [`pd.DataFrame`] A one-row table with the summary stats for 
+        this PSet
     """
     if pset_dfs is None:
         pset_dfs = {}

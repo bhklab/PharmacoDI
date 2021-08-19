@@ -4,7 +4,6 @@ import numpy as np
 import re
 from datatable import dt, f, g, join, sort, update, fread
 
-
 # -- Enable logging
 from loguru import logger
 import sys
@@ -19,6 +18,7 @@ logger_config = {
     ]
 }
 logger.configure(**logger_config)
+
 
 @logger.catch
 def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file, 

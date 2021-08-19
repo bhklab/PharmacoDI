@@ -8,6 +8,8 @@ import re
 from polars import col
 from datatable import dt, fread, f, g, by, sort
 
+from .utilties import harmonize_df_columns
+
 # -- Enable logging
 from loguru import logger
 import sys
@@ -60,7 +62,7 @@ def build_gene_df(pset_dict):
         gene_df = gene_df.append(pd.Series(pd.unique(
             pset_dict['molecularProfiles'][mDataType]['rowData']['.features']),
             name='name', dtype='str'))
-    gene_df.replace('\.[0-9]*$', '', regex=True, inplace=True)
+    gene_df.replace(r'\.[0-9]*$', '', regex=True, inplace=True)
     gene_df.drop_duplicates(inplace=True)
     return gene_df
 
@@ -114,7 +116,7 @@ def build_gene_annotation_df(pset_dict):
         .rename({'.features': 'gene_id'})
     # Remove Ensembl gene version
     gene_annotation_df['gene_id'] = gene_annotation_df['gene_id'] \
-        .apply(lambda x: re.sub('\..*$', '', x))
+        .apply(lambda x: re.sub(r'\..*$', '', x))
     gene_annotation_df = gene_annotation_df \
         .drop_duplicates() \
         .to_pandas()
@@ -122,19 +124,28 @@ def build_gene_annotation_df(pset_dict):
 
 
 @logger.catch
-def build_compound_annotation_df(pset_dict):
+def build_compound_annotation_df(
+    pset_dict: dict, 
+    column_dict: dict={'compound_id': str, 'smiles': str, 'inchikey': str, 
+        'pubchem': str, 'FDA': bool},
+    rename_dict: dict={'rownames': 'compound_id', 'cid': 'pubchem', 
+            'FDA': 'fda_status'}
+) -> pd.DataFrame:
     """
-    Build a table mapping each compound in a dataset to its compound annotations.
+    Build a table mapping each compound in a dataset to its compound 
+    annotations.
 
-    @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @return: [`DataFrame`] A table of all compound annotations, mapped to compounds
+    @param pset_dict: A nested dictionary containing all tables
+        in from the PharmacoSet object.
+    @return: A table of all compound annotations, 
+        mapped to compounds
     """
-    # Make compound_annotations df
-    compound_annotation_df = pset_dict['drug'][[
-        'rownames', 'smiles', 'inchikey', 'cid', 'FDA']].copy()
-    compound_annotation_df.rename(
-        columns={'rownames': 'compound_id', 'cid': 'pubchem', 'FDA': 'fda_status'}, 
-        inplace=True)
+    compound_annotation_df = pset_dict['drug'].copy()
+    compound_annotation_df.rename(columns=rename_dict, inplace=True)
+    compound_annotation_df = harmonize_df_columns(
+        df=compound_annotation_df,
+        column_dict=column_dict
+    )
     return compound_annotation_df
 
 

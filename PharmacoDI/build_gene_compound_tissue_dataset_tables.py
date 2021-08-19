@@ -2,6 +2,7 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import polars as pl
 import re
 
 # -- Enable logging
@@ -53,7 +54,9 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     """
     # Get gene_sig_df from gene_sig_file
     try:
-        gene_sig_df = read_gene_signatures(pset_name, gene_sig_dir)
+        gene_sig_df = pl.scan_csv(
+            os.path.join(gene_sig_dir, 'gene_compound_tissue_dataset.csv')
+            ).filter(pl.col('dataset') == pset_name).collect().to_pandas()
     except ValueError:
         return None
     # Extract relevant columns
@@ -71,7 +74,7 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     gctd_df.rename(columns={'gene': 'gene_id', 'compound': 'compound_id',
         'tissue': 'tissue_id', 'dataset': 'dataset_id'}, inplace=True)
     gctd_df['gene_id'] = gctd_df['gene_id'] \
-        .apply(lambda x: re.sub('\..*$', '', x))
+        .apply(lambda x: re.sub(r'\..*$', '', x))
     # Reorder columns
     return gctd_df[['gene_id', 'compound_id', 'dataset_id', 'tissue_id',
         'estimate', 'lower_analytic', 'upper_analytic', 
