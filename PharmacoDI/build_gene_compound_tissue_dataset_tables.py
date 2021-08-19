@@ -5,6 +5,8 @@ import numpy as np
 import polars as pl
 import re
 
+from typing import Optional
+
 # -- Enable logging
 from loguru import logger
 import sys
@@ -44,7 +46,11 @@ def read_gene_signatures(pset_name, file_path):
 
 
 @logger.catch
-def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
+def build_gene_compound_tissue_dataset_df(
+        gene_sig_dir: str, 
+        pset_name: str, 
+        ignore_psets: list=['NCI60', 'PRISM']
+) -> Optional(pd.DataFrame):
     """
     @param gene_sig_dir: [`string`] The file path to the directory 
         containing the gene signatures for each PSet
@@ -52,6 +58,9 @@ def build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name):
     @return: [`DataFrame`] The gene_compounds table for this PSet, 
         containing all stats (?)
     """
+    # Early return for PSets without gene signatures
+    if pset_name in ignore_psets:
+        return None
     # Get gene_sig_df from gene_sig_file
     try:
         gene_sig_df = pl.scan_csv(

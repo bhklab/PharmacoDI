@@ -107,8 +107,8 @@ def build_dose_response_df(pset_dict, pset_name):
 
     # Rename columns so they can be coerced to int later
     dose_pattern = dose.columns[1][:-1]
-    rename_dict = {f'{dose_pattern}{n}': str(
-        n) for n in np.arange(1, dose.shape[0])}
+    rename_dict = {f'{dose_pattern}{n}': str(n) 
+        for n in np.arange(1, dose.shape[0])}
     dose.rename(columns=rename_dict, inplace=True)
     response.rename(columns=rename_dict, inplace=True)
 
