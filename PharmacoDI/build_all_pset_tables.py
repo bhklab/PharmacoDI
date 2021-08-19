@@ -60,10 +60,10 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
         del pset_dfs['gene_compound_tissue_dataset']
 
     # Build summary/stats tables
-    logger.info('Building mol_cell and dataset_stats tables...')
-    if 'gene_compound_tissue_dataset' in pset_dfs:
-        pset_dfs['mol_cell'] = build_mol_cell_df(
-            pset_dict, pset_name, pset_dfs['gene_compound_tissue_dataset'], pset_dfs['dataset_cell'])
+    logger.info('Building mol_cell table...')
+    pset_dfs['mol_cell'] = build_mol_cell_df(
+        pset_dict, pset_name, pset_dfs['dataset_cell'])
+    logger.info('Building dataset_statistics table...')
     pset_dfs['dataset_statistics'] = build_dataset_stats_df(
         pset_dict, pset_name, pset_dfs)
 
@@ -79,7 +79,12 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
 
 
 @logger.catch
-def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=None):
+def build_mol_cell_df(
+    pset_dict: dict, 
+    pset_name: str, 
+    dataset_cell_df: pd.DataFrame=None, 
+    molecularTypes: list=['rna', 'rnaseq', 'cnv', 'mutation']
+) -> pd.DataFrame:
     """
     Builds a table that summarizes the number of profiles, per cell line, per molecular data
     type, in this dataset. (Only considers molecular data types for which there are sens stats?)
@@ -89,35 +94,28 @@ def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=No
     @param dataset_cell_df: [`pd.DataFrame`] A table containing all the cells in this  
         PSet and the PSet name
     @return: [`pd.DataFrame`] The table with the number of profiles for each cell line, 
-                                for each molecular data type
+        for each molecular data type
     """
     mol_cell_df = pd.DataFrame(
         columns=['cell_id', 'dataset_id', 'mDataType', 'num_prof'])
-
-    molecularTypes = pd.unique(gene_compound_df['mDataType'])
-
     if 'molecularProfiles' in pset_dict:
         profiles_dict = pset_dict['molecularProfiles']
+        molecularTypes = list(profiles_dict.keys())
     else:
         profiles_dict = None
-
     if dataset_cell_df is None:
         dataset_cell_df = build_dataset_cell_df(
             pset_dict, pset_name, cell_df=None)
-
     for mDataType in molecularTypes:
         if isinstance(profiles_dict, dict):
             # Get the number of times each cellid appears in colData for that mDataType
-            num_profiles = profiles_dict[mDataType]['colData']['cellid'].value_counts(
-            )
-
+            num_profiles = profiles_dict[mDataType]['colData']['cellid'] \
+                .value_counts()
             # Join with datasets cells on cellid
             df = pd.merge(dataset_cell_df, num_profiles,
-                          left_on='cell_id', right_on=num_profiles.index, how='left')
-
+                left_on='cell_id', right_on=num_profiles.index, how='left')
             # Rename num_profiles column
             df.rename(columns={'cellid': 'num_prof'}, inplace=True)
-
             # Set mDataType column to the current molecular type
             df['mDataType'] = mDataType
         else:
@@ -126,7 +124,6 @@ def build_mol_cell_df(pset_dict, pset_name, gene_compound_df, dataset_cell_df=No
             df = dataset_cell_df.copy()
             df['mDataType'] = mDataType
             df['num_prof'] = 0
-
         # Append to mol_cell_df
         mol_cell_df = mol_cell_df.append(df)
 
