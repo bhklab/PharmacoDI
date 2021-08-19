@@ -144,7 +144,7 @@ def build_profile_df(
             'EC50': float, 'AAC': float, 'IC50': float, 'DSS1': float,
             'DSS2': float, 'DSS3': float},
         rename_dict: dict={'.rownames': 'experiment_id', 'einf': 'Einf', 
-            'E_inf': 'Einf', 'slope_recomputed': 'HS', 'aac_recomputed': 'AAC',
+            'E_inf': 'Einf', 'aac_recomputed': 'AAC',
             'ic50_recomputed': 'IC50', 'ec50': 'EC50'
             }
 ) -> pd.DataFrame:
@@ -164,6 +164,8 @@ def build_profile_df(
     # Get profiles df and fix column names
     profile_df = pset_dict['sensitivity']['profiles'].copy()
     profile_df.rename(columns=rename_dict, inplace=True)
+    if 'HS' not in profile_df.columns:
+        profile_df.rename({'slope_recomputed': 'HS'})
     if 'experiment_id' not in profile_df.columns:
         raise ValueError('No experiment_id column in sensitivity profiles!') 
     # Check required columns
