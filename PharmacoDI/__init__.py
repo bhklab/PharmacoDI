@@ -14,4 +14,4 @@ from .build_cellosaurus import build_cellosaurus_df
 from .build_clinical_trial_tables import build_clinical_trial_tables
 from .map_genes_to_genomic_coordinates import map_genes_to_genomic_coordinates
 from .build_meta_tables import build_gene_compound_tissue_df, build_gene_compound_dataset_df
-from .utilties import harmonize_df_columns
+from .utilities import harmonize_df_columns

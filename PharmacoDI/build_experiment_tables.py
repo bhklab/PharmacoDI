@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from .build_primary_pset_tables import build_cell_df
-from .utilties import harmonize_df_columns
+from .utilities import harmonize_df_columns
 
 # -- Enable logging
 from loguru import logger

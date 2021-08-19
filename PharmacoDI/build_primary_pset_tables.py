@@ -8,7 +8,7 @@ import re
 from polars import col
 from datatable import dt, fread, f, g, by, sort
 
-from .utilties import harmonize_df_columns
+from .utilities import harmonize_df_columns
 
 # -- Enable logging
 from loguru import logger
