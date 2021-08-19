@@ -90,14 +90,16 @@ def build_experiment_df(pset_dict, pset_name, cell_df=None):
 @logger.catch
 def build_dose_response_df(pset_dict, pset_name):
     """
-    Build a table that, for each experiment in a dataset, lists the compound that was
-    tested, the doses in which that compound was administered, and the viability responses 
-    corresponding to all the doses.
+    Build a table that, for each experiment in a dataset, lists the 
+    compound that was tested, the doses in which that compound was 
+    administered, and the viability responses corresponding to all 
+    the doses.
 
-    @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
+    @param pset_dict: [`dict`] A nested dictionary containing all tables 
+        in the PSet
     @param pset_name: [`string`] The name of the PSet
-    @return: [`pd.DataFrame`] A table with all the dose-response mappings for 
-                                each experiment
+    @return: [`pd.DataFrame`] A table with all the dose-response 
+        mappings for each experiment
     """
     # Get dose and response info from pset
     dose = pset_dict['sensitivity']['raw.Dose']
@@ -138,9 +140,9 @@ def build_dose_response_df(pset_dict, pset_name):
 def build_profile_df(
         pset_dict: dict, 
         pset_name: str, 
-        column_dict: dict={'experiment_id': 'str', 'HS': 'float', 'Einf': 'float', 
-            'EC50': 'float', 'AAC': 'float', 'IC50': 'float', 'DSS1': 'float',
-            'DSS2': 'float', 'DSS3': 'float'},
+        column_dict: dict={'experiment_id': str, 'HS': float, 'Einf': float, 
+            'EC50': float, 'AAC': float, 'IC50': float, 'DSS1': float,
+            'DSS2': float, 'DSS3': float},
         rename_dict: dict={'.rownames': 'experiment_id', 'einf': 'Einf', 
             'E_inf': 'Einf', 'slope_recomputed': 'HS', 'aac_recomputed': 'AAC',
             'ic50_recomputed': 'IC50', 'ec50': 'EC50'
