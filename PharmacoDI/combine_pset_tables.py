@@ -36,7 +36,6 @@ def combine_all_pset_tables(data_dir, output_dir, compound_meta_file):
     join_dfs = combine_primary_tables(data_dir, output_dir, compound_meta_file)
     combine_secondary_tables(data_dir, output_dir, join_dfs)
     combine_experiment_tables(data_dir, output_dir, join_dfs)
-    combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs)
 
 
 @logger.catch
@@ -57,7 +56,8 @@ def combine_primary_tables(data_dir, output_dir, compound_meta_file):
     # Special handling for compound table: join final table with compounds_with_ids.csv
     compound_df = load_table('compound', data_dir)
     compound_meta_df = dt.fread(compound_meta_file)
-    compound_meta_df.names = {'unique.drugid': 'name', 'PharmacoDB.uid': 'compound_uid'}
+    compound_meta_df.names = {'unique.drugid': 'name', 
+        'PharmacoDB.uid': 'compound_uid'}
     compound_meta_df = compound_meta_df[:, ['name', 'compound_uid']]
     compound_meta_df.key = 'name'
     compound_df = compound_df[:, :, dt.join(compound_meta_df)]
@@ -105,7 +105,7 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
                     ['dataset', 'cell'], join_dfs, add_index=False)
     load_join_write('dataset_tissue', data_dir, output_dir,
                     ['dataset', 'tissue'], join_dfs, add_index=False)
-    # TODO: temporary workaround for dataset_compound until we standardize compound -> compound
+    # TODO: temporary workaround for dataset_compound until we standardize 
     dataset_compound_df = load_table('dataset_compound', data_dir)
     dataset_compound_df = join_tables(
         dataset_compound_df, join_dfs['dataset'], 'dataset_id')
