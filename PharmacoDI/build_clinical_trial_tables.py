@@ -153,7 +153,7 @@ def get_clinical_trials_for_compound(
         logger.warning(f"API call for clinical trials related to {compound_name} failed for the following reason: {r.json()['Error']}")
         return studies, 0, 0
     else:
-        logger.warning(f"Returned HTML 404 Page for {compound_name}")
+        logger.warning(f"Returned HTML 404 page for {compound_name}")
         return studies, 0, 0
     response = r.json()['StudyFieldsResponse']
     if 'StudyFields' in response:

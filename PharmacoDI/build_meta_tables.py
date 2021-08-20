@@ -62,16 +62,17 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     gct_missing_columns = np.setdiff1d(gct_table_columns, np.asarray(gct_dt.names))
     for col in gct_missing_columns:
         gct_dt[col] = None
-    gct_dt1 = gct_dt[:, list(gct_table_columns)]
+    gct_dt1 = gct_dt[:, [*gct_table_columns, 'gene_name', 'compound_name', 
+        'tissue_name']]
     # Sanity check the columns are there
-    if not np.all(gct_table_columns == np.asarray(gct_dt1.names)):
+    if not np.all(np.isin(gct_table_columns, np.asarray(gct_dt1.names))):
         raise ValueError(f'The gene_compound_tissue table',
             ' has missing columns!')
 
     # -- Map to existing FK ids
     # gene id
     gene_dt.names = {'id': 'gene_id', 'name': 'gene_name'}
-    gene_dt.key = 'gene_id'
+    gene_dt.key = 'gene_name'
     # NOTE: the g object references the joined tables namespace
     gct_dt1[:, update(gene_id=g.gene_id), join(gene_dt)]
 
@@ -84,16 +85,15 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
         warnings.warn('Some gene_ids in gene_compound_tissue are still NA! Dropping'
             'the missing rows...')
         gct_dt1 = gct_dt1[~dt.isna(f.gene_id), :]
+    del gct_dt1[:, 'gene_name']
 
     # compound id
-    gct_dt1.names = {'compound_id': 'compound_name'}
     compound_dt.names = {'id': 'compound_id', 'name': 'compound_name'}
     del compound_dt[:, 'compound_uid']
     compound_dt.key = 'compound_name'
     gct_dt1[:, update(compound_id=g.compound_id), join(compound_dt)]
 
     # tissue id
-    gct_dt1.names = {'tissue_id': 'tissue_name'}
     tissue_dt.names = {'id': 'tissue_id', 'name': 'tissue_name'}
     tissue_dt.key = 'tissue_name'
     gct_dt1[:, update(tissue_id=g.tissue_id), join(tissue_dt)]
