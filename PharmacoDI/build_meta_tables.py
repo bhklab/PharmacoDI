@@ -172,12 +172,6 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     # -- Map to existing FK ids
     # gene id
     gcd_dt1.names = {'gene_id': 'gene_name'}
-    # fix gene ids that still have versions
-    gsub = np.vectorize(re.sub)
-    gcd_dt1[
-        f.gene_name.re_match('ENS.*[.][0-9]*'), 
-        update(gene_name=gsub('[.][0-9]*$', '', gcd_dt1[
-            f.gene_name.re_match('ENS.*[.][0-9]*'), :]['gene_name'].to_numpy()))]
     gene_dt.names = {'id': 'gene_id', 'name': 'gene_name'}
     gene_dt.key = 'gene_name'
     # NOTE: the g object references the joined tables namespace
@@ -188,7 +182,6 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
         .to_numpy().flatten())
     if len(failed_genes) > 0:
         warnings.warn(f'The genes: {failed_genes} did not map!')
-
 
     if (np.any(gcd_dt1[:, dt.isna(f.gene_id)].to_numpy())):
         warnings.warn('Some gene_ids in gene_compound_dataset are still NA!'
