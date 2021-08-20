@@ -27,7 +27,12 @@ logger.configure(**logger_config)
 
 
 @logger.catch
-def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
+def build_all_pset_tables(
+    pset_dict: dict, 
+    pset_name: str, 
+    procdata_dir: str, 
+    gene_sig_dir: str
+) -> None:
     """
     Build all tables for a dataset and write them to a directory of all processed data.
 
@@ -52,12 +57,6 @@ def build_all_pset_tables(pset_dict, pset_name, procdata_dir, gene_sig_dir):
     # FIX: Modified to use pre-3.9 syntax to ensure backwards compatibility
     pset_dfs = {**pset_dfs, **build_experiment_tables(
         pset_dict, pset_name, pset_dfs['cell'])}
-
-    # Build gene compounds table
-    logger.info('Building gene_compound_tissue_dataset table...')
-    pset_dfs['gene_compound_tissue_dataset'] = build_gene_compound_tissue_dataset_df(gene_sig_dir, pset_name)
-    if not isinstance(pset_dfs['gene_compound_tissue_dataset'], pd.DataFrame):
-        del pset_dfs['gene_compound_tissue_dataset']
 
     # Build summary/stats tables
     logger.info('Building mol_cell table...')

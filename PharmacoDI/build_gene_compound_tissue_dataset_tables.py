@@ -3,6 +3,7 @@ import glob
 import pandas as pd
 import numpy as np
 import polars as pl
+from datatable import dt, fread, f, g, join, by, sort
 import re
 
 # -- Enable logging
@@ -61,11 +62,13 @@ def build_gene_compound_tissue_dataset_df(
         return None
     # Get gene_sig_df from gene_sig_file
     try:
-        gene_sig_df = pl.scan_csv(
-            os.path.join(gene_sig_dir, 'gene_compound_tissue_dataset.csv')
-            ).filter(pl.col('dataset') == pset_name).collect().to_pandas()
+        gene_sig_df = dt.fread(
+            os.path.join(gene_sig_dir, 'gene_compound_tissue_dataset.csv'),
+            memory_limit=int(1e10) # 10 GBs
+        )
     except ValueError:
         return None
+    gene_sig_df[f.dataset == pset_name, :]
     # Extract relevant columns
     # gene_compound_tissue_dataset = gctd
     gctd_df = gene_sig_df.loc[:, ['gene', 'compound', 'tissue', 'dataset',
