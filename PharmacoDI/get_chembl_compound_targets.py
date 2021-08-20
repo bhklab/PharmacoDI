@@ -54,18 +54,20 @@ def get_chembl_compound_target_mappings(drug_annotation_file, target_file, drug_
     molecule_ids = list(chembl_drug_df['molecule_chembl_id'])
 
     # Write updated compound_annotations to disk
-    logger.info(f'Writing updated compound_annotation table to {output_dir}')
+    logger.info(f'Writing updated compound_annotation table to {drug_annotation_file}')
     updated_drug_df.rename({'molecule_chembl_id': 'chembl_id'}, inplace=True)
     dt.Frame(updated_drug_df).to_jay(drug_annotation_file)
 
     # Get targets from target_file
     if not os.path.exists(target_file):
-        raise SusteError(f"ERROR: the ChEMBL target file {target_file} doesn't exist!\n"
-              "Call get_chembl_targets to generate this file.")
+        raise SystemError(
+            f"ERROR: the ChEMBL target file {target_file} doesn't exist!\n"
+            "Call get_chembl_targets to generate this file."
+        )
     
     target_df = pd.read_csv(target_file, index_col=0)
     target_df = target_df[['target_chembl_id',
-                           'pref_name', 'target_type', 'accession']].copy()
+        'pref_name', 'target_type', 'accession']].copy()
     target_df.drop_duplicates(inplace=True)
     target_ids = list(pd.unique(target_df['target_chembl_id']))
 
@@ -122,8 +124,10 @@ def get_drugs_by_inchikey(inchikeys):
     chembl_drug_df = pd.DataFrame(columns=['inchikey', 'molecule_chembl_id'])
     # Initiate connection to ChEMBL molecule table
     molecule = new_client.molecule
-    molecules = molecule.filter(molecule_structures__standard_inchi_key__in=inchikeys).only(
-        ['molecule_chembl_id', 'molecule_structures'])
+    molecules = molecule \
+        .filter(
+            molecule_structures__standard_inchi_key__in=inchikeys) \
+        .only(['molecule_chembl_id', 'molecule_structures'])
     for mol in molecules:
         inchikey = mol['molecule_structures']['standard_inchi_key']
         chembl_drug_df = chembl_drug_df \
@@ -145,8 +149,12 @@ def get_drug_target_mappings(molecule_ids, target_ids):
     """
     # Initiate connection to ChEMBL activity table
     activity = new_client.activity
-    results = activity.filter(molecule_chembl_id__in=molecule_ids, target_chembl_id__in=target_ids,
-                              pchembl_value__isnull=False).only(['molecule_chembl_id', 'target_chembl_id'])
+    results = activity \
+        .filter(
+            molecule_chembl_id__in=molecule_ids, 
+            target_chembl_id__in=target_ids,
+            pchembl_value__isnull=False
+        ).only(['molecule_chembl_id', 'target_chembl_id'])
     mappings = list(results)
     df = pd.DataFrame(mappings)
     return df

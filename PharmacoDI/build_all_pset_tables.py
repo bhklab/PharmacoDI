@@ -37,9 +37,9 @@ def build_all_pset_tables(
     Build all tables for a dataset and write them to a directory of all processed data.
 
     @param pset_dict: [`dict`] A nested dictionary containing all tables in the PSet
-    @param pset_name: [`string`] The name of the PSet
-    @param procdata_dir: [`string`] The file path to the directory containing processed data
-    @param gene_sig_dir: [`string`] The file path to the directory containing gene_compounds data
+    @param pset_name: [`str`] The name of the PSet
+    @param procdata_dir: [`str`] The file path to the directory containing processed data
+    @param gene_sig_dir: [`str`] The file path to the directory containing gene_compounds data
     @return: [`None`]
     """
     pset_dfs = {}

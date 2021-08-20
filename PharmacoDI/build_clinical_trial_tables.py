@@ -22,7 +22,7 @@ logger_config = {
 logger.configure(**logger_config)
 
 @logger.catch
-def build_clinical_trial_tables(output_dir):
+def build_clinical_trial_tables(output_dir: str) -> pd.DataFrame:
     """
     Build the clinical trial and compound trial tables by querying the
     clinicaltrial.gov API. Queries are made by compound names from the compound
@@ -39,20 +39,23 @@ def build_clinical_trial_tables(output_dir):
     # Query clinicaltrials.gov API to get clinical trials by compound name
     logger.info('Getting clinical trials from clinicaltrials.gov...')
     all_studies = parallelize(list(compound_df['compound_name']),
-                              get_clinical_trials_by_compound_names, 50)
+        get_clinical_trials_by_compound_names, 50)
     studies_df = pd.concat(all_studies)
 
     # Explode list-like columns into separate rows, duplicating the index
     # I only use this because all the fields are returned in arrays for some reason
-    object_columns = studies_df.dtypes[studies_df.dtypes ==
-                                       'object'].index.values
+    object_columns = studies_df.dtypes[
+        studies_df.dtypes == 'object'
+    ].index.values
     for column in object_columns:
         studies_df = studies_df.explode(column)
     # Drop and rename columns
     studies_df.drop(columns='Rank', inplace=True)
-    studies_df.rename(columns={'NCTId': 'nct',
-                               'SeeAlsoLinkURL': 'link',
-                               'OverallStatus': 'status'}, inplace=True)
+    studies_df.rename(
+        columns={'NCTId': 'nct', 'SeeAlsoLinkURL': 'link', 
+            'OverallStatus': 'status'}, 
+        inplace=True
+    )
 
     # Build clinical trials table
     clin_trial_df = studies_df[['nct', 'link', 'status']].copy()
@@ -83,24 +86,44 @@ def get_clinical_trials_by_compound_names(compound_names):
     """
     all_studies = []
     for compound_name in compound_names:
+        clean_compound_name = compound_name.replace(' ', '')
         min_rank = 1
         max_rank = 1000
         # Make initial API call for this compound
-        studies, num_studies_returned, num_studies_found = get_clinical_trials_for_compound(compound_name, min_rank, max_rank)
+        failed_compounds = []
+        try:
+            studies, num_studies_returned, num_studies_found = get_clinical_trials_for_compound(
+                clean_compound_name, min_rank, max_rank
+            )
+        except:
+            failed_compounds = [*failed_compounds, compound_name]
+            next
         # If not all studies were returned, make additional calls
         while num_studies_found > num_studies_returned:
             min_rank += 1000
             max_rank += 1000
-            more_studies, n_returned, n_found = get_clinical_trials_for_compound(
-                compound_name, min_rank, max_rank)
+            try:
+                more_studies, n_returned, n_found = get_clinical_trials_for_compound(
+                    clean_compound_name, min_rank, max_rank
+                )
+            except:
+                next
             studies = pd.concat([studies, more_studies])
             num_studies_returned += n_returned
-        studies['compound_name'] = compound_name
+        studies['compound_name'] = f"{compound_name}"
         all_studies.append(studies)
+    if (len(failed_compounds) > 0):
+        failed_names = ', '.join(failed_compounds)
+        logger.warning(f"Failed compounds: {failed_names}")
     return pd.concat(all_studies)
 
+
 @logger.catch
-def get_clinical_trials_for_compound(compound_name, min_rank, max_rank):
+def get_clinical_trials_for_compound(
+    compound_name: str, 
+    min_rank: int, 
+    max_rank: int
+) -> tuple:
     """
     Given a compound_name, query the clinicaltrial.gov API to get all trials
     for this compound between min_rank and max_rank (inclusive). Return the 
@@ -116,18 +139,21 @@ def get_clinical_trials_for_compound(compound_name, min_rank, max_rank):
     # Make API call
     base_url = 'https://clinicaltrials.gov/api/query/study_fields'
     params = {
-        'expr': compound_name,
+        'expr': requests.utils.quote(compound_name),
         'fields': 'OrgStudyId,NCTId,OverallStatus,SeeAlsoLinkURL',
         'min_rnk': min_rank,
         'max_rnk': max_rank,
         'fmt': 'json'
     }
     r = requests.get(base_url, params=params)
-    studies = pd.DataFrame(columns=['Rank', 'NCTId', 'OverallStatus', 'SeeAlsoLinkURL'])
+    studies = pd.DataFrame(columns=['Rank', 'NCTId', 'OverallStatus', 
+        'SeeAlsoLinkURL'])
     # Check that request was successful
-    if r.status_code != 200:
-        logger.info(f'API call for clinical trials related to {compound_name}',
-              ' failed for the following reason:\n', r.json()['Error'])
+    if r.status_code != 200 and r.status_code != 404:
+        logger.warning(f"API call for clinical trials related to {compound_name} failed for the following reason: {r.json()['Error']}")
+        return studies, 0, 0
+    else:
+        logger.warning(f"Returned HTML 404 Page for {compound_name}")
         return studies, 0, 0
     response = r.json()['StudyFieldsResponse']
     if 'StudyFields' in response:
