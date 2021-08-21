@@ -132,6 +132,9 @@ def build_dose_response_df(pset_dict, pset_name):
 
     # Add dataset_id for joins
     dose_response_df['dataset_id'] = pset_name
+    # Round dose and response to correct number if digits after decimal
+    dose_response_df['dose'] = dose_response_df['dose'].round(8)
+    dose_response_df['response'] = dose_response_df['response'].round(8)
 
     return dose_response_df
 
