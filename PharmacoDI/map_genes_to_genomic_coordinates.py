@@ -65,4 +65,3 @@ def map_genes_to_genomic_coordinates(gene_path, gene_annotation_path, gencode_pa
     del gene_annotation[:, ['name', 'id', 'start', 'end', 'seqnames']]
 
     gene_annotation.to_jay(gene_annotation_path)
-    return(gene_annotation)
