@@ -8,7 +8,7 @@ import os
 import warnings
 import numpy as np
 import re
-# NOTE: No melt/cast for datatable yet? Using polars instead
+# NOTE: No melt/pivot for datatable yet? Using polars instead
 from datatable import dt, f, g, join, sort, update, fread
 import polars as pl
 
@@ -78,14 +78,15 @@ def build_cell_synonym_df(cell_file, output_dir):
         .apply(lambda x: dataset_map[x]) \
         .cast(pl.Int64)
     
-    cell_synonym_df = cell_synonym_df.drop_duplicates()
+    cell_synonym_df = cell_synonym_df \
+        .drop('cell_uid') \
+        .drop_duplicates() \
+        .drop_nulls()
     cell_synonym_df['id'] = range(1, cell_synonym_df.shape[0] + 1)
     
     # Convert to datatable.Frame for fast write to disk
     cell_synonym_dt = dt.Frame(cell_synonym_df.to_arrow())
     cell_synonym_dt.to_jay(os.path.join(output_dir, 'cell_synonym.jay'))
-    return cell_synonym_dt
-    
 
 
 @logger.catch
@@ -121,7 +122,10 @@ def build_tissue_synonym_df(tissue_file, output_dir):
     
     tissue_synonym_df = tissue_df \
         .join(tissue_meta_long, left_on='name', right_on='unique.tissueid', how='left') \
-        .drop_duplicates()
+        .drop_duplicates() \
+        .drop_nulls() \
+        .rename({'id': 'tissue_id'}) \
+        .drop('name')
 
     # Create a map from dataset
     dataset_map = {dct['name']: str(dct['id']) for dct in 
@@ -140,7 +144,6 @@ def build_tissue_synonym_df(tissue_file, output_dir):
     # Convert to datatable.Frame for fast write to disk
     tissue_synonym_dt = dt.Frame(tissue_synonym_df.to_arrow())
     tissue_synonym_dt.to_jay(os.path.join(output_dir, 'tissue_synonym.jay'))
-    return tissue_synonym_dt
 
 
 def build_compound_synonym_df(compound_file, output_dir):
@@ -195,7 +198,7 @@ def build_compound_synonym_df(compound_file, output_dir):
     # Convert to datatable.Frame for memory mapped output file
     df = dt.Frame(compound_synonym_df.to_arrow())
     df.to_jay(os.path.join(output_dir, 'compound_synonym.jay'))
-    return df
+
 
 
 ## ---- DEPRECATED

@@ -99,7 +99,6 @@ def build_compound_target_table(chembl_df, drugbank_df, target_df, output_dir, c
     drug_syn_df = dt.Frame(pl.from_arrow(drug_syn_df.to_arrow()).drop_duplicates().to_arrow())
     drug_syn_df.key = 'compound_name'
     drugbank_df = drugbank_df[:, :, join(drug_syn_df)]
-    # TODO: from 7521 down to only 122 rows :/
     # Combine ChEMBL and Drugbank tables to make drug target table
     drug_target_df = pd.concat([chembl_df.to_pandas()[['name', 'compound_id']].copy(),
                                 drugbank_df.to_pandas()[['name', 'compound_id']].copy()])
