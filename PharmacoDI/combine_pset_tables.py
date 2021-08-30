@@ -3,7 +3,7 @@ import os
 import re
 import numpy as np
 import pandas as pd
-from datatable import dt, fread, f, g, join, by, sort
+from datatable import dt, fread, f, g, join, by, sort, update
 import polars as pl
 
 # -- Enable logging
@@ -47,7 +47,7 @@ def combine_primary_tables(data_dir, output_dir, compound_meta_file):
     @param data_dir: [`string`] The file path to read the PSet tables
     @param output_dir: [`string`] The file path to write the final tables
     @return: [`dict(string: datatable.Frame)`] A dictionary of all the primary
-                                                tables, with names as keys
+        tables, with names as keys
     """
     # Load, concatenate, and write primary tables to disk
     tissue_df = load_join_write('tissue', data_dir, output_dir)
@@ -91,7 +91,7 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
     join_dfs['cell'] = rename_and_key(cell_df, 'cell_id')
 
     # Build compound annotation table
-    load_join_write('compound_annotation', data_dir,
+    compound_annotation = load_join_write('compound_annotation', data_dir,
                     output_dir, ['compound'], join_dfs, add_index=False)
     # Build gene annotation table
     gene_annot_df = load_table('gene_annotation', data_dir)
@@ -168,7 +168,7 @@ def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
     # Join on gene, compound, dataset, and tissue IDs
     for fk in ['gene', 'compound', 'dataset', 'tissue']:
         logger.info(f'Joining gene_compound_tissue_dataset table with {fk} table...')
-        gd_df = join_tables(gd_df, join_dfs[fk], f'{fk}_id', ignore_versions=True)
+        gd_df = join_tables(gd_df, join_dfs[fk], f'{fk}_id')
 
     write_table(gd_df, 'gene_compound_tissue_dataset', output_dir)
 
@@ -184,7 +184,7 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
     @param data_dir: [`string`] File path to the directory with all PSet tables
     @param output_dir: [`string`] The file path to the final tables
     @param foreign_keys: [`list(string)`] An optional list of tables that this table
-                                            needs to be joined with
+        needs to be joined with
     @param join_dfs: [`dict(string: datatable.Frame)`] An optional dictionary of join
         tables (for building out foreign keys); keys are table names
     @param add_index: [`bool`] Indicates whether or not to add a primary key (1-nrows)
@@ -227,6 +227,43 @@ def load_table(name, data_dir):
 
 
 @logger.catch
+def fread_table_for_all_psets(
+    table_name: str,
+    data_dir: str,
+    column_dict: dict,
+    rename_dict: dict = None,
+    key_columns: list = None
+) -> dt.Frame:
+    """
+    Reads all tables named `table_name` from `data_dir`, using `column_dict`
+    to specify the column names, order and types to read in. The resulting
+    table iterator is then concatenated using `datatable.rbind` and the
+    columns are renamed according to rename dict.
+    
+    :param table_name:
+    :param data_dir:
+    :param column_dict:
+    :param rename_dict:
+    """
+    logger.info(f'Loading PSet-specific {table_name} tables from {data_dir}...')
+    # Get all files
+    files = glob.glob(os.path.join(data_dir, '**', f'*{table_name}.jay'))
+    # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
+    files = [file_name for file_name in files if re.search(
+        data_dir + r'/(\w+)/\1_' + table_name + '.jay$', file_name)]
+    # Read and concatenate tables
+    df = dt.rbind(*dt.iread(files, columns=column_dict), force=True)
+    # Drop duplicates (groups by all columns and
+    # selects only the first row from each group)
+    df = df[0, :, by(df.names)]
+    if rename_dict is not None:
+        df.names = rename_dict
+    if key_columns is not None:
+        df = df[0, :, :, by(key_columns)]
+    return df
+
+
+@logger.catch
 def rename_and_key(df, join_col, og_col='name'):
     """
     Prepare df to be joined with other tables by renaming the column
@@ -248,7 +285,12 @@ def rename_and_key(df, join_col, og_col='name'):
 
 
 @logger.catch
-def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True):
+def join_tables(
+    df1: dt.Frame, 
+    df2: dt.Frame,
+    join_col: str, 
+    delete_unjoined=True
+) -> None:
     """
     Join df2 and df1 based on join_col (left outer join by default).
 
@@ -256,7 +298,6 @@ def join_tables(df1, df2, join_col, ignore_versions=False, delete_unjoined=True)
     @param df2: [`datatable.Frame`] The join table (ex. tissue datatable)
     @param join_col: [`string`] The name of the columns on which the tables
         will be joined (ex. 'tissue_id')
-    @param ignore_versions: [`bool`]
     @param delete_unjoined: [`bool`] An optional parameter (default=True)
         that lets you keep rows in df1 which didn't join to any rows in df2
     @return [`datatable.Frame`] The new, joined table
