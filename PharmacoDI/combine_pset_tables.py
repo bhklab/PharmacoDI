@@ -91,8 +91,8 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
     join_dfs['cell'] = rename_and_key(cell_df, 'cell_id')
 
     # Build compound annotation table
-    compound_annotation = load_join_write('compound_annotation', data_dir,
-                    output_dir, ['compound'], join_dfs, add_index=False)
+    load_join_write('compound_annotation', data_dir,
+        output_dir, ['compound'], join_dfs, add_index=False)
     # Build gene annotation table
     gene_annot_df = load_table('gene_annotation', data_dir)
     # Join the other way so that genes that got cut out are included back in
@@ -252,7 +252,7 @@ def fread_table_for_all_psets(
     files = [file_name for file_name in files if re.search(
         data_dir + r'/(\w+)/\1_' + table_name + '.jay$', file_name)]
     # Read and concatenate tables
-    df = dt.rbind(*dt.iread(files, columns=column_dict), force=True)
+    df = dt.rbind(*dt.iread(files, columns=column_dict))
     # Drop duplicates (groups by all columns and
     # selects only the first row from each group)
     df = df[0, :, by(df.names)]

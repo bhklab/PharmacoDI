@@ -13,14 +13,14 @@ slot_names = ['curation', 'drug', 'molecularProfiles',
 
 
 def read_pset(
-        pset_name, 
-        file_path, 
-        slot_names=['curation', 'drug', 'molecularProfiles', 
+        pset_name: str, 
+        file_path: str, 
+        slot_names: list=['curation', 'drug', 'molecularProfiles', 
             'sensitivity', 'annotation', 'cell']
-    ):
+) -> pd.DataFrame:
     """
     Read in all the data associated with a PharmacoSet from the
-    .csv files exported by the writeToCsv method from rPharmacoDI.
+    files exported by the writeTo* method from rPharmacoDI.
     
     @param pset_name: [`string`] Name of the PharmacoSet object as it
         appears in the directory name for files exported using 
@@ -40,7 +40,8 @@ def read_pset(
     pset_dir = glob.glob(f'{os.path.join(file_path, pset_name)}_PSet')[0]
     if pset_dir is None:
         raise ValueError(
-            f'No PSet directory named {pset_name} could be found in {file_path}')
+            f'No PSet directory named {pset_name} could be found in {file_path}'
+        )
     
     # List al files for the select PSet, then split on $ to make a DataFrame
     pset_files = pd.Series(os.listdir(pset_dir))
@@ -101,9 +102,12 @@ def pset_df_to_nested_dict(df):
     for key_check in pd.unique(df[df.columns[0]]):
         if key_check is not None:
             # Recursively nest the first column as key and remaning columns as values
-            return {key: pset_df_to_nested_dict(df.loc[df[df.columns[0]] == key, df.columns[1:]]) if
-                    df[1:].shape[1] > 2 else df.loc[df[df.columns[0]] == key, 'data'].values[0] for
-                    key in pd.unique(df[df.columns[0]])}
+            return {
+                key: pset_df_to_nested_dict(df.loc[df[df.columns[0]] == key, df.columns[1:]]) 
+                    if df[1:].shape[1] > 2 
+                    else df.loc[df[df.columns[0]] == key, 'data'].values[0]
+                    for key in pd.unique(df[df.columns[0]])
+            }
         else:
             # Return the data column if there is no key
             return df.iloc[:, -1].values[0]

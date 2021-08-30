@@ -127,7 +127,7 @@ def build_gene_annotation_df(pset_dict):
 def build_compound_annotation_df(
     pset_dict: dict, 
     column_dict: dict={'compound_id': str, 'smiles': str, 'inchikey': str, 
-        'pubchem': int, 'FDA': bool},
+        'pubchem': float, 'FDA': bool},
     rename_dict: dict={'rownames': 'compound_id', 'cid': 'pubchem', 
             'FDA': 'fda_status'}
 ) -> pd.DataFrame:
