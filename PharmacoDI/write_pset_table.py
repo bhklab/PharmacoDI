@@ -41,5 +41,5 @@ def write_pset_table(pset_df, df_name, pset_name, df_dir):
 
     print(f'Writing {df_name} table to {pset_path}...')
     # Use datatable to convert df to csv
-    pset_df.to_jay(os.path.join(pset_path, f'{pset_name}_{df_name}.jay'))
+    pset_df.to_csv(os.path.join(pset_path, f'{pset_name}_{df_name}.csv'))
     

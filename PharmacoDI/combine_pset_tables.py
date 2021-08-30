@@ -214,10 +214,10 @@ def load_table(name, data_dir):
     """
     logger.info(f'Loading PSet-specific {name} tables from {data_dir}...')
     # Get all files
-    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.jay'))
+    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.csv'))
     # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
     files = [file_name for file_name in files if re.search(
-        data_dir + r'/(\w+)/\1_' + name + '.jay$', file_name)]
+        data_dir + r'/(\w+)/\1_' + name + '.csv$', file_name)]
     # Read and concatenate tables
     df = dt.rbind(*dt.iread(files), force=True)
     # Drop duplicates (groups by all columns and
@@ -247,10 +247,10 @@ def fread_table_for_all_psets(
     """
     logger.info(f'Loading PSet-specific {table_name} tables from {data_dir}...')
     # Get all files
-    files = glob.glob(os.path.join(data_dir, '**', f'*{table_name}.jay'))
+    files = glob.glob(os.path.join(data_dir, '**', f'*{table_name}.csv'))
     # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
     files = [file_name for file_name in files if re.search(
-        data_dir + r'/(\w+)/\1_' + table_name + '.jay$', file_name)]
+        data_dir + r'/(\w+)/\1_' + table_name + '.csv$', file_name)]
     # Read and concatenate tables
     df = dt.rbind(*dt.iread(files, columns=column_dict))
     # Drop duplicates (groups by all columns and
