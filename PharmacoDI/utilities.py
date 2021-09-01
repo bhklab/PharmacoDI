@@ -40,7 +40,8 @@ def harmonize_df_columns(
                 if isinstance(df[column][0], float) and dtype == str:
                     # deal with lack of NA in Pandas int Series
                     # also ensure floats converted to strings don't have decimals
-                    df[column] = df[column].astype('Int64').astype(str)
+                    df[column] = df[column].astype('Int64').astype(str) \
+                        .replace({'<NA>': None})
                 else:
                     df[column] = df[column].astype(dtype)
             except TypeError:
