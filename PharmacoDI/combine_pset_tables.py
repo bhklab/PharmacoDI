@@ -303,8 +303,8 @@ def join_tables(
     @return [`datatable.Frame`] The new, joined table
     """
     if (join_col not in df1.names) or (join_col not in df2.names):
-        logger.info(f'{join_col} is missing from one or both of the datatables passed!',
-            'Make sure you have prepared df2 using rename_and_key().')
+        logger.info(f'{join_col} is missing from one or both of the datatables ' 
+            'passed! Make sure you have prepared df2 using rename_and_key().')
         return None
     df = df1[:, :, dt.join(df2)]
     # Check to see if any FKs are null

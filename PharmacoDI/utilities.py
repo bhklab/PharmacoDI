@@ -17,7 +17,7 @@ def harmonize_df_columns(
 
     @param df: A pd.DataFrame to pad.
     @param column_dict: A dictionary where required column names are keys
-        and respective values are the column type.
+        and respective values are the column numpy type.
 
     @return df with all the columns specified in column_dict.
     """
@@ -35,9 +35,9 @@ def harmonize_df_columns(
         df[column] = pd.Series(empty_column, dtype=dtype)
     # Check column types
     for column, dtype in column_dict.items():
-        if not isinstance(df[column].dtype, dtype):
+        if not isinstance(df[column][0], dtype):
             try:
-                if isinstance(df[column].dtype, float) and isinstance(dtype, str):
+                if isinstance(df[column][0], float) and dtype == str:
                     # deal with lack of NA in Pandas int Series
                     # also ensure floats converted to strings don't have decimals
                     df[column] = df[column].astype('Int64').astype(str)
