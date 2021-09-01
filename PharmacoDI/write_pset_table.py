@@ -34,12 +34,7 @@ def write_pset_table(pset_df, df_name, pset_name, df_dir):
     # Convert to datatable Frame for fast write to disk
     pset_df = dt.Frame(pset_df)
 
-    # # Fix bad column type guesses in 
-    # if df_name == 'gene_annotation':
-    #     pset_df = pset_df[:, [f.gene_id, as_type(f.symbol, str32), 
-    #     as_type(f.gene_seq_start, int32), as_type(f.gene_seq_end, int32]]
-
     print(f'Writing {df_name} table to {pset_path}...')
     # Use datatable to convert df to csv
-    pset_df.to_csv(os.path.join(pset_path, f'{pset_name}_{df_name}.csv'))
+    pset_df.to_jay(os.path.join(pset_path, f'{pset_name}_{df_name}.jay'))
     

@@ -53,7 +53,7 @@ def combine_primary_tables(data_dir, output_dir, compound_meta_file):
     tissue_df = load_join_write('tissue', data_dir, output_dir)
     gene_df = load_join_write('gene', data_dir, output_dir)
     dataset_df = load_join_write('dataset', data_dir, output_dir)
-    # Special handling for compound table: join final table with compounds_with_ids.csv
+    # Special handling for compound table: join final table with compounds_with_ids.jay
     compound_df = load_table('compound', data_dir)
     compound_meta_df = dt.fread(compound_meta_file)
     compound_meta_df.names = {'unique.drugid': 'name', 
@@ -80,7 +80,7 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
     writes them to output_dir.
 
     @param join_dfs: [`dict(string: datatable.Frame)`] A dictionary of all the primary
-                                                    tables, with names as keys
+        tables, with names as keys
     @param data_dir: [`string`] The file path to read the PSet tables
     @param output_dir: [`string`] The file path to write the final tables
     @return: [`dict(string: datatable.Frame)`] The updated dictionary of join tables
@@ -142,7 +142,7 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
                                     'cell', 'compound', 'dataset', 'tissue'], join_dfs)
     # Don't write the 'name' column
     experiment_df[:, ['id', 'cell_id', 'compound_id', 'dataset_id', 'tissue_id']] \
-        .to_csv(os.path.join(output_dir, 'experiment.csv'))
+        .to_csv(os.path.join(output_dir, 'experiment.jay'))
     # Rename columns and key experiment table based on experiment name and dataset id
     experiment_df.names = {'name': 'experiment_id'}
     experiment_df = experiment_df[:, ['id', 'experiment_id', 'dataset_id']]
@@ -188,7 +188,7 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
     @param join_dfs: [`dict(string: datatable.Frame)`] An optional dictionary of join
         tables (for building out foreign keys); keys are table names
     @param add_index: [`bool`] Indicates whether or not to add a primary key (1-nrows)
-        when writing the final table to a .csv
+        when writing the final table to a .jay
     @return: [`datatable.Frame`] The final combined and joined table
     """
     df = load_table(name, data_dir)
@@ -214,12 +214,12 @@ def load_table(name, data_dir):
     """
     logger.info(f'Loading PSet-specific {name} tables from {data_dir}...')
     # Get all files
-    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.csv'))
-    # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
+    files = glob.glob(os.path.join(data_dir, '**', f'*{name}.jay'))
+    # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.jay'
     files = [file_name for file_name in files if re.search(
-        data_dir + r'/(\w+)/\1_' + name + '.csv$', file_name)]
+        data_dir + r'/(\w+)/\1_' + name + '.jay$', file_name)]
     # Read and concatenate tables
-    df = dt.rbind(*dt.iread(files), force=True)
+    df = dt.rbind(*dt.iread(files))
     # Drop duplicates (groups by all columns and
     # selects only the first row from each group)
     df = df[0, :, by(df.names)]
@@ -247,12 +247,12 @@ def fread_table_for_all_psets(
     """
     logger.info(f'Loading PSet-specific {table_name} tables from {data_dir}...')
     # Get all files
-    files = glob.glob(os.path.join(data_dir, '**', f'*{table_name}.csv'))
-    # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.csv'
+    files = glob.glob(os.path.join(data_dir, '**', f'*{table_name}.jay'))
+    # Filter so that file path are '{data_dir}/{pset}/{pset}_{name}.jay'
     files = [file_name for file_name in files if re.search(
-        data_dir + r'/(\w+)/\1_' + table_name + '.csv$', file_name)]
+        data_dir + r'/(\w+)/\1_' + table_name + '.jay$', file_name)]
     # Read and concatenate tables
-    df = dt.rbind(*dt.iread(files, columns=column_dict))
+    df = dt.rbind(*dt.iread(files, columns=column_dict), force=True)
     # Drop duplicates (groups by all columns and
     # selects only the first row from each group)
     df = df[0, :, by(df.names)]
@@ -326,7 +326,7 @@ def join_tables(
 def write_table(df, name, output_dir, add_index=True):
     """
     Add a primary key to df ('id' column) and write it to output_dir
-    as a .csv file.
+    as a .jay file.
 
     @param df: [`datatable.Frame`] A PharmacoDB table
     @param name: [`string`] The name of the table
