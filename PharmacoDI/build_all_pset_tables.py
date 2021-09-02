@@ -160,11 +160,14 @@ def build_dataset_stats_df(pset_dict, pset_name, pset_dfs=None):
     if 'experiment' not in pset_dfs:
         pset_dfs['experiment'] = build_experiment_df(
             pset_dict, pset_name, pset_dfs['cell'])
+    if 'gene' not in pset_dfs:
+        pset_dfs['gene'] = pd.DataFrame()
 
     return pd.DataFrame({
         'dataset_id': [pset_name],
         'cell_lines': [len(pset_dfs['cell'].index)],
         'tissues': [len(pset_dfs['tissue'].index)],
         'compounds': [len(pset_dfs['compound'].index)],
-        'experiments': [len(pset_dfs['experiment'].index)]
+        'experiments': [len(pset_dfs['experiment'].index)],
+        'genes': [pset_dfs['gene'].shape[0]]
     })
