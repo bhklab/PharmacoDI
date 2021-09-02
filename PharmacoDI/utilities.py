@@ -46,7 +46,7 @@ def harmonize_df_columns(
                     df[column] = df[column].astype(dtype)
             except TypeError:
                 print(f'DataFrame column {column} failed to be coerced to'
-                    '{str(dtype)}!')
+                    f'{str(dtype)}!')
     return df
 
 
