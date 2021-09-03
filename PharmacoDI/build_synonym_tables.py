@@ -92,7 +92,7 @@ def build_cell_synonym_df(cell_file, output_dir):
 @logger.catch
 def build_tissue_synonym_df(tissue_file, output_dir):
     # Get metadata file and tissue_df (assume that tissue_df is also in output_dir)
-    tissue_metadata = pl.read_csv(tissue_file, null_values='NA')
+    tissue_metadata = pl.read_csv(tissue_file) # will read NA as string!
     tissue_df = pl.from_arrow(
         fread(os.path.join(output_dir, 'tissue.jay')).to_arrow()
         )
@@ -115,10 +115,10 @@ def build_tissue_synonym_df(tissue_file, output_dir):
 
     # Get all unique synonyms and join with cell_df
     tissue_meta_long = tissue_metadata \
-            .melt(id_vars='unique.tissueid', value_vars=tissue_columns) \
-            .drop_nulls() \
-            .drop_duplicates() \
-            .rename({'value': 'tissue_name', 'variable': 'dataset_id'})
+        .melt(id_vars='unique.tissueid', value_vars=tissue_columns) \
+        .drop_nulls() \
+        .drop_duplicates() \
+        .rename({'value': 'tissue_name', 'variable': 'dataset_id'})
     
     tissue_synonym_df = tissue_df \
         .join(tissue_meta_long, left_on='name', right_on='unique.tissueid', how='left') \
