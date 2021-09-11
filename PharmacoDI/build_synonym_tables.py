@@ -11,6 +11,7 @@ import re
 # NOTE: No melt/pivot for datatable yet? Using polars instead
 from datatable import dt, f, g, join, sort, update, fread
 import polars as pl
+from polars import col
 
 # -- Enable logging
 from loguru import logger
@@ -36,10 +37,10 @@ def build_cell_synonym_df(cell_file, output_dir):
     cell_metadata = pl.read_csv(cell_file, null_values='NA')
     cell_df = pl.from_arrow(
         fread(os.path.join(output_dir, 'cell.jay')).to_arrow()
-        )
+    )
     dataset_df = pl.from_arrow(
         fread(os.path.join(output_dir, 'dataset.jay')).to_arrow()
-        )
+    )
 
     # Find all columns relevant to cellid
     cell_cols = [col for col in cell_metadata.columns if 
@@ -149,10 +150,12 @@ def build_tissue_synonym_df(tissue_file, output_dir):
 def build_compound_synonym_df(compound_file, output_dir):
     # Get metadata file and compound_df
     compound_metadata = pl.read_csv(compound_file, null_values='NA')
-    compound_df = pl.from_arrow(fread(os.path.join(output_dir, 'compound.jay')).to_arrow())
+    compound_df = pl.from_arrow(
+        fread(os.path.join(output_dir, 'compound.jay')).to_arrow()
+    )
     dataset_df = pl.from_arrow(
         fread(os.path.join(output_dir, 'dataset.jay')).to_arrow()
-        )
+    )
 
     # Find all columns relevant to tissueid
     compound_cols = [col for col in compound_metadata.columns if 
@@ -172,7 +175,8 @@ def build_compound_synonym_df(compound_file, output_dir):
             .melt(id_vars='unique.drugid', value_vars=compound_columns) \
             .drop_nulls() \
             .drop_duplicates() \
-            .rename({'value': 'compound_name', 'variable': 'dataset_id'})
+            .rename({'value': 'compound_name', 'variable': 'dataset_id'}) \
+            .filter(col('compound_name') != '')
     
     compound_synonym_df = compound_df \
         .join(compound_meta_long, left_on='name', right_on='unique.drugid', how='left') \
