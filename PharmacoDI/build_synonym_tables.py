@@ -172,11 +172,11 @@ def build_compound_synonym_df(compound_file, output_dir):
 
     # Get all unique synonyms and join with cell_df
     compound_meta_long = compound_metadata \
-            .melt(id_vars='unique.drugid', value_vars=compound_columns) \
-            .drop_nulls() \
-            .drop_duplicates() \
-            .rename({'value': 'compound_name', 'variable': 'dataset_id'}) \
-            .filter(col('compound_name') != '')
+        .melt(id_vars='unique.drugid', value_vars=compound_columns) \
+        .drop_nulls() \
+        .drop_duplicates() \
+        .rename({'value': 'compound_name', 'variable': 'dataset_id'}) \
+        .filter(col('compound_name') != '')
     
     compound_synonym_df = compound_df \
         .join(compound_meta_long, left_on='name', right_on='unique.drugid', how='left') \

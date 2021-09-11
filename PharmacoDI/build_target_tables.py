@@ -40,8 +40,10 @@ def build_target_tables(drugbank_file, chembl_file, output_dir, compound_synonym
     if not os.path.exists(drugbank_file):
         raise FileNotFoundError(f"The file {drugbank_file} doesn't exist!")
     drugbank_df = dt.fread(drugbank_file)
-    drugbank_df.names = {'polypeptide.external.identifiers.UniProtKB': 'uniprot_id',
-        'drugName': 'compound_name'}
+    drugbank_df.names = {
+        'polypeptide.external.identifiers.UniProtKB': 'uniprot_id',
+        'drugName': 'compound_name'
+    }
 
     # Get ChEMBL data
     if not os.path.exists(chembl_file):
@@ -94,11 +96,12 @@ def build_compound_target_table(chembl_df, drugbank_df, target_df, output_dir, c
     if not os.path.exists(compound_synonym_file):
         raise FileNotFoundError(f"The file {compound_synonym_file} doesn't exist!")
     drug_syn_df = dt.fread(compound_synonym_file)
-    # Join drugbank df with drug table (TODO: are we really using drug name to map?)
+    # Join drugbank df with drug table
     del drug_syn_df[:, ['dataset_id', 'id']]
-    drug_syn_df = dt.Frame(pl.from_arrow(drug_syn_df.to_arrow()).drop_duplicates().to_arrow())
-    drug_syn_df.key = 'compound_name'
-    drugbank_df = drugbank_df[:, :, join(drug_syn_df)]
+    drug_syn_df = pl.from_arrow(drug_syn_df.to_arrow()) \
+        .drop_duplicates()
+    drugbank_df = pl.from_arrow(drugbank_df[:, ['name', 'compound_name']].to_arrow())
+    drugbank_df = drugbank_df.join(drug_syn_df, on='compound_name')
     # Combine ChEMBL and Drugbank tables to make drug target table
     drug_target_df = pd.concat([chembl_df.to_pandas()[['name', 'compound_id']].copy(),
                                 drugbank_df.to_pandas()[['name', 'compound_id']].copy()])
