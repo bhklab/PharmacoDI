@@ -27,8 +27,7 @@ logger.configure(**logger_config)
 def combine_all_pset_tables(
     data_dir: str, 
     output_dir: str, 
-    compound_meta_file: str, 
-    reactome_compound_file: str
+    compound_meta_file: str
 ) -> dict:
     """
     Combine all PSet tables into the final PharmacoDB tables.
