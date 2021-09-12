@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from datatable import dt, fread, f, g, join, by, sort, update
 import polars as pl
+from polars import col
 
 # -- Enable logging
 from loguru import logger
@@ -80,6 +81,8 @@ def combine_primary_tables(
     reactome_df.names = {"Drug_Reactome_ID": "reactome_id",
         "PharmacoDB_ID": "compound_uid"}
     reactome_df = reactome_df[:, ["compound_uid", "reactome_id"]]
+    ## FIXME:: Why are there duplciated compound_uid values?
+    reactome_df = reactome_df[0, :, by("compound_uid")] # drop duplicates
     reactome_df.key = "compound_uid"
     compound_meta_df = compound_meta_df[:, :, join(reactome_df)]
     compound_meta_df = compound_meta_df[:, ["name", "compound_uid", "reactome_id"]]
