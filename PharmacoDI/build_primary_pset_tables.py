@@ -76,7 +76,11 @@ def build_tissue_df(pset_dict):
     @return: [`DataFrame`] The tissue table
     """
     tissue_df = pd.Series(
-        pd.unique(pset_dict['cell']['tissueid']), name='name')
+        pd.unique(pset_dict['cell']['tissueid']),
+        name='name'
+    )
+    tissue_df[tissue_df.tissueid.isna(), 'tissueid'] = 'NA'
+    tissue_df.sort_values('tissueid', inplace=True)
     return tissue_df
 
 
@@ -125,7 +129,7 @@ def build_gene_annotation_df(pset_dict):
 
 @logger.catch
 def build_compound_annotation_df(
-    pset_dict: dict, 
+    pset_dict: dict,
     column_dict: dict={'compound_id': str, 'smiles': str, 'inchikey': str, 
         'pubchem': str, 'FDA': bool},
     rename_dict: dict={'rownames': 'compound_id', 'cid': 'pubchem', 
