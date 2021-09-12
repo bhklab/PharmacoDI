@@ -42,8 +42,7 @@ def combine_all_pset_tables(
     join_dfs = combine_primary_tables(
         data_dir, 
         output_dir, 
-        compound_meta_file, 
-        reactome_compound_file
+        compound_meta_file
     )
     combine_secondary_tables(data_dir, output_dir, join_dfs)
     combine_experiment_tables(data_dir, output_dir, join_dfs)
@@ -53,8 +52,7 @@ def combine_all_pset_tables(
 def combine_primary_tables(
     data_dir: str, 
     output_dir: str, 
-    compound_meta_file: str, 
-    reactome_compound_file: str
+    compound_meta_file: str
 ) -> dict:
     """
     Build all the primary tables, i.e., tables that require no joins,
@@ -76,20 +74,7 @@ def combine_primary_tables(
     compound_meta_df.names = {"unique.drugid": "name", 
         "PharmacoDB.uid": "compound_uid"}
 
-    # Add reactome id to compound_annotations
-    reactome_df = dt.fread(reactome_compound_file)
-    reactome_df.names = {"Drug_Reactome_ID": "reactome_id",
-        "PharmacoDB_ID": "compound_uid"}
-    reactome_df = reactome_df[:, ["compound_uid", "reactome_id"]]
-    ## FIXME:: Why are there duplciated compound_uid values?
-    reactome_df = reactome_df[0, :, by("compound_uid")] # drop duplicates
-    reactome_df.key = "compound_uid"
-    compound_meta_df = compound_meta_df[:, :, join(reactome_df)]
-    compound_meta_df = compound_meta_df[:, ["name", "compound_uid", "reactome_id"]]
-    write_table(compound_meta_df, "compound_annotation", output_dir)
-
-    # Add compound_uid to compound table
-    del compound_meta_df[:, ["reactome_id"]]
+    # Add compound_uid to compound table and write to disk
     compound_meta_df.key = "name"
     compound_df = compound_df[:, :, dt.join(compound_meta_df)]
     compound_df = write_table(compound_df, "compound", output_dir)
