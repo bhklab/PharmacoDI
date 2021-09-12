@@ -79,7 +79,7 @@ def build_tissue_df(pset_dict):
         pd.unique(pset_dict['cell']['tissueid']),
         name='name'
     )
-    tissue_df[tissue_df.tissueid.isna(), 'tissueid'] = 'NA'
+    tissue_df[tissue_df.name.isna(), 'tissueid'] = 'NA'
     tissue_df.sort_values('tissueid', inplace=True)
     return tissue_df
 
