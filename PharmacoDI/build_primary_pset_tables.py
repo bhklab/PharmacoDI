@@ -79,7 +79,6 @@ def build_tissue_df(pset_dict):
         pd.unique(pset_dict['cell']['tissueid']),
         name='name'
     )
-    tissue_df[tissue_df.isna()] = 'NA'
     tissue_df.sort_values(inplace=True)
     return tissue_df
 
