@@ -138,7 +138,7 @@ def combine_secondary_tables(data_dir, output_dir, join_dfs):
     load_join_write("dataset_tissue", data_dir, output_dir,
                     ["dataset", "tissue"], join_dfs, add_index=False)
     # TODO: temporary workaround for dataset_compound until we standardize 
-    dataset_compound_df = load_table("dataet_compound", data_dir)
+    dataset_compound_df = load_table("dataset_compound", data_dir)
     dataset_compound_df = join_tables(
         dataset_compound_df, join_dfs["dataset"], "dataset_id")
     compound_df = join_dfs["compound"].copy()
