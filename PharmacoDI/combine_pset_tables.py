@@ -66,7 +66,7 @@ def combine_primary_tables(
     tissue_df = load_table("tissue", data_dir)
     tissue_df[dt.isna(f.name), update(name="NA")]
     tissue_df = tissue_df[:, :, sort(f.name)]
-    write_table(tissue_df, "tissue", output_dir)
+    tissue_df = write_table(tissue_df, "tissue", output_dir)
     gene_df = load_join_write("gene", data_dir, output_dir)
     dataset_df = load_join_write("dataset", data_dir, output_dir)
 
@@ -178,17 +178,6 @@ def combine_experiment_tables(data_dir, output_dir, join_dfs):
         write_table(df, df_name, output_dir,
                     add_index=(df_name == "dose_response"))
 
-
-@logger.catch
-def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
-    gd_df = load_table("gene_compound_tissue_dataset", data_dir)
-    tissue_df = join_dfs["tissue"]
-
-    # Join on gene, compound, dataset, and tissue IDs
-    for fk in ["gene", "compound", "dataset", "tissue"]:
-        logger.info(f"Joining gene_compound_tissue_dataset table with {fk} table...")
-        gd_df = join_tables(gd_df, join_dfs[fk], f"{fk}_id")
-    write_table(gd_df, "gene_compound_tissue_dataset", output_dir)
 
 
 @logger.catch
@@ -356,7 +345,7 @@ def write_table(df, name, output_dir, add_index=True):
     logger.info(f"Writing {name} table to {output_dir}...")
     if add_index:
         # Index datatable
-        df = dt.cbind(dt.Frame(id=np.arange(df.nrows) + 1), df)
+        df[:, update(id=np.arange(df.nrows) + 1)]
     df.to_jay(os.path.join(output_dir, f"{name}.jay"))
     return df
 
