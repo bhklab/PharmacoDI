@@ -185,7 +185,6 @@ def combine_gene_compound_tissue_dataset_tables(data_dir, output_dir, join_dfs):
     for fk in ["gene", "compound", "dataset", "tissue"]:
         logger.info(f"Joining gene_compound_tissue_dataset table with {fk} table...")
         gd_df = join_tables(gd_df, join_dfs[fk], f"{fk}_id")
-
     write_table(gd_df, "gene_compound_tissue_dataset", output_dir)
 
 
@@ -214,6 +213,8 @@ def load_join_write(name, data_dir, output_dir, foreign_keys=[], join_dfs=None, 
             raise KeyError(f"The {name} table has the foreign key {fk}_id but \
                             there is no {fk} table in the join tables dictionary.")
         df = join_tables(df, join_dfs[fk], f"{fk}_id")
+    fk_columns = [f"{fk}_id" for fk in foreign_keys]
+    df = df[:, :, sort(fk_columns)]
     df = write_table(df, name, output_dir, add_index)
     return df
 
