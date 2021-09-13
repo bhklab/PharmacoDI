@@ -64,7 +64,7 @@ def combine_primary_tables(
     """
     # Load, concatenate, and write primary tables to disk
     tissue_df = load_table("tissue", data_dir)
-    tissue_df = tissue_df[:, :, sort(f.name)]
+    tissue_df = tissue_df[:, :, sort(f.name, na_position="last")]
     tissue_df = write_table(tissue_df, "tissue", output_dir)
     gene_df = load_join_write("gene", data_dir, output_dir)
     dataset_df = load_join_write("dataset", data_dir, output_dir)
