@@ -64,7 +64,6 @@ def combine_primary_tables(
     """
     # Load, concatenate, and write primary tables to disk
     tissue_df = load_table("tissue", data_dir)
-    tissue_df[dt.isna(f.name), update(name="NA")]
     tissue_df = tissue_df[:, :, sort(f.name)]
     tissue_df = write_table(tissue_df, "tissue", output_dir)
     gene_df = load_join_write("gene", data_dir, output_dir)
