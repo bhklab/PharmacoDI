@@ -65,6 +65,7 @@ def build_cell_synonym_df(cell_file, output_dir):
     cell_synonym_df = cell_df \
         .join(cell_meta_long, left_on='name', right_on='unique.cellid', how='left') \
         .drop(['tissue_id', 'name']) \
+        .filter(col('cell_name') != "") \
         .drop_duplicates() \
         .rename({'id': 'cell_id'})
 
@@ -123,10 +124,13 @@ def build_tissue_synonym_df(tissue_file, output_dir):
     
     tissue_synonym_df = tissue_df \
         .join(tissue_meta_long, left_on='name', right_on='unique.tissueid', how='left') \
-        .drop_duplicates() \
-        .drop_nulls() \
+        .drop('name') \
         .rename({'id': 'tissue_id'}) \
-        .drop('name')
+        .filter(col('tissue_name') != "") \
+        .drop_duplicates() \
+        .drop_nulls()
+        
+        
 
     # Create a map from dataset
     dataset_map = {dct['name']: str(dct['id']) for dct in 
@@ -145,7 +149,6 @@ def build_tissue_synonym_df(tissue_file, output_dir):
     # Convert to datatable.Frame for fast write to disk
     tissue_synonym_dt = dt.Frame(tissue_synonym_df.to_arrow())
     tissue_synonym_dt.to_jay(os.path.join(output_dir, 'tissue_synonym.jay'))
-
 
 def build_compound_synonym_df(compound_file, output_dir):
     # Get metadata file and compound_df
@@ -181,9 +184,11 @@ def build_compound_synonym_df(compound_file, output_dir):
     compound_synonym_df = compound_df \
         .join(compound_meta_long, left_on='name', right_on='unique.drugid', how='left') \
         .rename({'id': 'compound_id'}) \
-        .drop(['compound_uid', 'name']) \
+        .select(['compound_id', 'dataset_id', 'compound_name']) \
         .drop_nulls() \
         .drop_duplicates()
+
+    
 
     # Create a map from dataset
     dataset_map = {dct['name']: str(dct['id']) for dct in 
@@ -206,7 +211,7 @@ def build_compound_synonym_df(compound_file, output_dir):
 
 
 ## ---- DEPRECATED
-## TODO:: Write new helper methods to reduce repition
+## TODO:: Write new helper methods to reduce repetition
 
 # Helper function for getting all synonyms related to a certain df
 def melt_and_join(meta_df, unique_id, join_df):
