@@ -7,9 +7,9 @@ import sys
 
 logger_config = {
     "handlers": [
-        {"sink": sys.stdout, "colorize": True, "format": 
+        {"sink": sys.stdout, "colorize": True, "format":
             "<green>{time}</green> <level>{message}</level>"},
-        {"sink": f"logs/write_pset_tables.log", 
+        {"sink": f"logs/write_pset_tables.log",
             "serialize": True, # Write logs as JSONs
             "enqueue": True}, # Makes logging queue based and thread safe
     ]
@@ -19,7 +19,7 @@ logger.configure(**logger_config)
 @logger.catch
 def write_pset_table(pset_df, df_name, pset_name, df_dir):
     """
-    Write a PSet table to a CSV file.
+    Write a PSet table to a .jay file.
 
     @param pset_df: [`DataFrame`] A PSet DataFrame
     @param pset_name: [`string`] The name of the PSet

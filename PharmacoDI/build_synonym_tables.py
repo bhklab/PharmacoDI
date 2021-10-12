@@ -187,7 +187,7 @@ def build_compound_synonym_df(compound_file, output_dir):
         .drop_duplicates()
 
     # Create a map from dataset
-    dataset_map = {dct["name"]: str(dct["id"]) for dct 
+    dataset_map = {dct["name"]: str(dct["id"]) for dct
         in dataset_df.to_pandas().to_dict(orient="record")}
     # Regex the dataset identifiers to match the dataset map
     compound_synonym_df["dataset_id"] = compound_synonym_df["dataset_id"] \
@@ -196,7 +196,7 @@ def build_compound_synonym_df(compound_file, output_dir):
         .apply(lambda x: re.sub("GDSC1.*$", "GDSC_v1", x)) \
         .apply(lambda x: dataset_map[x]) \
         .cast(pl.Int64)
-    
+
     compound_synonym_df = compound_synonym_df.drop_duplicates()
     compound_synonym_df["id"] = range(1, compound_synonym_df.shape[0] + 1)
 

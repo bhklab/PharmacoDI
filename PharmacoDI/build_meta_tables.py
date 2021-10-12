@@ -49,10 +49,10 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
     gct_dt = fread(gene_compound_tissue_file)
 
     # -- Fix names and assign missing columns
-    if np.all(np.isin(np.asarray(('Gene', 'Tissue', 'Drug', 'FWER_genes')), 
-        np.asarray(gct_dt.names))):
-            gct_dt.names = {'Gene': 'gene_id', 'Tissue': 'tissue_id', 
-                'Drug': 'compound_id', 'FWER_genes': 'FWER_gene'}
+    if np.all(np.isin(np.asarray(('Gene', 'Tissue', 'Drug', 'FWER_genes')),
+            np.asarray(gct_dt.names))):
+        gct_dt.names = {'Gene': 'gene_id', 'Tissue': 'tissue_id',
+            'Drug': 'compound_id', 'FWER_genes': 'FWER_gene'}
     # Determine missing columns and assign them, so we don't have to change code 
     #>when new columns are addeds
     gct_table_columns = np.asarray(('id', 'gene_id', 'compound_id', 'tissue_id', 
@@ -118,7 +118,7 @@ def build_gene_compound_tissue_df(gene_compound_tissue_file, gene_file,
 ##>into a helper for gene_compound instead of copy pasting code
 @logger.catch
 def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file, 
-    compound_file, dataset_file, output_dir):
+    compound_file, dataset_file, output_dir, compound_names):
     """
     Build gene_compound_dataset table (description?)
 
@@ -127,14 +127,18 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     @param compound_file: [`str`] Path to the compound table .csv file.
     @param dataset_file: [`str`] Path to the tissue table .csv file.
     @param output_dir: [`str`] Path to write the output file to.
+    :param compound_name: [`str`] Path to an optional .csv file mapping 
+        updated compound names to the dataset. This is to ensure that corrected
+        compound annotations still make it into the database without the need
+        to rerun all the gene signatures
 
     @return [`datatable.Frame`] Writes the 'gene_compound_dataset.csv' file to 
         output_dir the returns the table.
     """
     # -- Check the input files exist
-    for file in [gene_compound_dataset_file, gene_file, compound_file, dataset_file]:
-        if not os.path.exists(file):
-            raise FileNotFoundError(f'Could not find the {file}')
+    for fl in [gene_compound_dataset_file, gene_file, compound_file, dataset_file]:
+        if not os.path.exists(fl):
+            raise FileNotFoundError(f'Could not find the {fl}')
 
     # -- Read in mapping tables
     gene_dt = fread(gene_file)
@@ -145,20 +149,21 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
     gcd_dt = fread(gene_compound_dataset_file)
 
     # -- Fix names and assign missing columns
-    gcd_dt.names = {'gene': 'gene_id', 'compound': 'compound_id', 
-        'dataset': 'dataset_id', 'lower': 'lower_analytic', 
-        'upper': 'upper_analytic', 'pvalue': 'pvalue_analytic', 
+    gcd_dt.names = {'gene': 'gene_id', 'compound': 'compound_id',
+        'dataset': 'dataset_id', 'lower': 'lower_analytic',
+        'upper': 'upper_analytic', 'pvalue': 'pvalue_analytic',
         'fdr': 'fdr_analytic'}
     del gcd_dt[:, ['significant', 'tissue']]
 
     # Determine missing columns and assign them, so we don't have to change code 
     #>when new columns are addeds
-    gcd_table_columns = np.asarray(('id', 'gene_id', 'compound_id', 'dataset_id', 
+    gcd_table_columns = np.asarray(('id', 'gene_id', 'compound_id', 'dataset_id',
         'estimate', 'lower_analytic', 'upper_analytic', 'lower_permutation',
         'upper_permutation', 'n', 'pvalue_analytic', 'pvalue_permutation', 
         'df', 'fdr_analytic', 'fdr_permutation', 'significant_permutation',
         'permutation_done', 'sens_stat', 'mDataType'))
-    gcd_missing_columns = np.setdiff1d(gcd_table_columns, np.asarray(gcd_dt.names))
+    gcd_missing_columns = np.setdiff1d(gcd_table_columns, 
+        np.asarray(gcd_dt.names))
     for col in gcd_missing_columns:
         gcd_dt[col] = None
     gcd_dt1 = gcd_dt[:, list(gcd_table_columns)]
@@ -188,12 +193,30 @@ def build_gene_compound_dataset_df(gene_compound_dataset_file, gene_file,
             'Dropping the missing rows...')
         gcd_dt1 = gcd_dt1[~dt.isna(f.gene_id), :]
 
-    # compound id
+    # fix compound names 
+    ## FIXME:: Remove this when gene signatures are regenerated
+    ## START patch
+    fix_names_df = dt.fread(compound_names)
+    fix_names_df[f.dataset == "GDSC_2020(v1-8.2)", update(dataset="GDSC_v1")]
+    fix_names_df[f.dataset == "GDSC_2020(v2-8.2)", update(dataset="GDSC_v2")]
+    fix_names_df.names = {"drugid": "compound_name",
+        "unique.drugid": "compound_id", "dataset": "dataset_id"}
+    fix_names_df.key = ["compound_name", "dataset_id"]
     gcd_dt1.names = {'compound_id': 'compound_name'}
+    gcd_dt1[~dt.isna(g.compound_id), update(compound_name=g.compound_id),
+        join(fix_names_df)]
+    ## END patch
+
+    # compound id
     compound_dt.names = {'id': 'compound_id', 'name': 'compound_name'}
     del compound_dt[:, 'compound_uid']
     compound_dt.key = 'compound_name'
     gcd_dt1[:, update(compound_id=g.compound_id), join(compound_dt)]
+
+    if np.any(gcd_dt1[:, dt.isna(f.compound_id)].to_numpy()):
+        warnings.warn("Some compound_ids in gene_compound_dataset are stll "
+            "NA! Dropping the missing rows...")
+        gcd_dt1 = gcd_dt1[~dt.isna(f.compound_id)]
 
     # dataset id
     gcd_dt1.names = {'dataset_id': 'dataset_name'}

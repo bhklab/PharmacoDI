@@ -80,8 +80,8 @@ def build_all_pset_tables(
 
 @logger.catch
 def build_mol_cell_df(
-    pset_dict: dict, 
-    pset_name: str, 
+    pset_dict: dict,
+    pset_name: str,
     dataset_cell_df: pd.DataFrame=None, 
     molecularTypes: list=['rna', 'rnaseq', 'cnv', 'mutation']
 ) -> pd.DataFrame:
